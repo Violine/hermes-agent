@@ -108,7 +108,8 @@ import { latchChatActivation } from "@/lib/chat-activation";
 import { api } from "@/lib/api";
 import type { StatusResponse, UpdateCheckResponse } from "@/lib/api";
 
-function RouteFallback({ label = "Loading…" }: { label?: string }) {
+function RouteFallback({ label }: { label?: string }) {
+  const { t } = useI18n();
   return (
     <div
       className="flex min-h-[12rem] flex-1 items-center justify-center"
@@ -117,7 +118,7 @@ function RouteFallback({ label = "Loading…" }: { label?: string }) {
     >
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Spinner />
-        <span>{label}</span>
+        <span>{label ?? t.common.loading}</span>
       </div>
     </div>
   );
@@ -190,7 +191,7 @@ const BUILTIN_NAV_REST: NavItem[] = [
     label: "Sessions",
     icon: MessageSquare,
   },
-  { path: "/files", label: "Files", icon: FolderOpen },
+  { path: "/files", labelKey: "files", label: "Files", icon: FolderOpen },
   {
     path: "/analytics",
     labelKey: "analytics",
@@ -207,14 +208,14 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/cron", labelKey: "cron", label: "Cron", icon: Clock },
   { path: "/skills", labelKey: "skills", label: "Skills", icon: Package },
   { path: "/plugins", labelKey: "plugins", label: "Plugins", icon: Puzzle },
-  { path: "/mcp", label: "MCP", icon: Plug },
-  { path: "/channels", label: "Channels", icon: Radio },
-  { path: "/webhooks", label: "Webhooks", icon: Webhook },
-  { path: "/pairing", label: "Pairing", icon: ShieldCheck },
+  { path: "/mcp", labelKey: "mcp", label: "MCP", icon: Plug },
+  { path: "/channels", labelKey: "channels", label: "Channels", icon: Radio },
+  { path: "/webhooks", labelKey: "webhooks", label: "Webhooks", icon: Webhook },
+  { path: "/pairing", labelKey: "pairing", label: "Pairing", icon: ShieldCheck },
   { path: "/profiles", labelKey: "profiles", label: "Profiles", icon: Users },
   { path: "/config", labelKey: "config", label: "Config", icon: Settings },
   { path: "/env", labelKey: "keys", label: "Keys", icon: KeyRound },
-  { path: "/system", label: "System", icon: Wrench },
+  { path: "/system", labelKey: "system", label: "System", icon: Wrench },
   {
     path: "/docs",
     labelKey: "documentation",
@@ -532,7 +533,7 @@ export default function App() {
           "bg-background-base",
         )}
         style={{
-          background: "var(--component-header-background)",
+          background: "var(--component-header-background, var(--background-base))",
           borderImage: "var(--component-header-border-image)",
           clipPath: "var(--component-header-clip-path)",
         }}
@@ -591,7 +592,7 @@ export default function App() {
               collapsed && "lg:w-14",
             )}
             style={{
-              background: "var(--component-sidebar-background)",
+              background: "var(--component-sidebar-background, var(--background-base))",
               clipPath: "var(--component-sidebar-clip-path)",
               borderImage: "var(--component-sidebar-border-image)",
             }}
@@ -716,7 +717,7 @@ export default function App() {
             >
               <div
                 className={cn(
-                  "flex min-w-0 items-center gap-2",
+                  "flex min-w-0 flex-wrap items-center gap-2",
                   isDesktopCollapsed && "lg:flex-col lg:items-start",
                 )}
               >
@@ -792,7 +793,7 @@ export default function App() {
                   !chatOverriddenByPlugin &&
                   (pluginsLoading ? (
                     isChatRoute ? (
-                      <RouteFallback label="Loading chat…" />
+                      <RouteFallback label={t.app.loadingChat} />
                     ) : null
                   ) : chatHostMounted ? (
                     <div
@@ -806,7 +807,7 @@ export default function App() {
                       <Suspense
                         fallback={
                           isChatRoute ? (
-                            <RouteFallback label="Loading chat…" />
+                            <RouteFallback label={t.app.loadingChat} />
                           ) : null
                         }
                       >
@@ -814,7 +815,7 @@ export default function App() {
                       </Suspense>
                     </div>
                   ) : isChatRoute ? (
-                    <RouteFallback label="Loading chat…" />
+                    <RouteFallback label={t.app.loadingChat} />
                   ) : null)}
               </div>
               <PluginSlot name="post-main" />
@@ -857,7 +858,11 @@ function SidebarNavLink({
 
   const navLabel = labelKey
     ? ((t.app.nav as Record<string, string>)[labelKey] ?? label)
-    : label;
+    : label.trim().toLowerCase() === "kanban"
+      ? (t.app.pluginLabels?.kanban ?? label)
+      : label.trim().toLowerCase() === "achievements"
+        ? (t.app.pluginLabels?.achievements ?? label)
+        : label;
   const showTooltip = (event: MouseEvent<HTMLElement> | FocusEvent<HTMLElement>) => {
     setHovered(true);
     setTooltipAnchor(event.currentTarget);
@@ -974,14 +979,15 @@ function SidebarSystemActions({
     if (updateConfirmInfo?.behind && updateConfirmInfo.behind > 0) {
       const cmd = updateConfirmInfo.update_command;
       const n = updateConfirmInfo.behind;
-      return `This will run 'hermes update' (${cmd}) and pull ${n} new commit${n === 1 ? "" : "s"}. The gateway restarts when the update finishes; the current session keeps its prompt cache until then.`;
+      const message = t.status.updateHermesConfirmMessageWithCommits ??
+        "This will run 'hermes update' ({command}) and pull {count} new commits. The gateway restarts when the update finishes; the current session keeps its prompt cache until then.";
+      return message.replace("{command}", cmd).replace("{count}", String(n));
     }
     const cmd = updateConfirmInfo?.update_command ?? "hermes update";
-    return (
-      t.status.updateHermesConfirmMessage ??
-      `This will run 'hermes update' (${cmd}) and restart the gateway when it finishes.`
-    );
-  }, [t.status.updateHermesConfirmMessage, updateConfirmInfo]);
+    return (t.status.updateHermesConfirmMessage ??
+      "This will run 'hermes update' ({command}) and restart the gateway when it finishes.")
+      .replace("{command}", cmd);
+  }, [t.status.updateHermesConfirmMessage, t.status.updateHermesConfirmMessageWithCommits, updateConfirmInfo]);
 
   const items: SystemActionItem[] = [
     {

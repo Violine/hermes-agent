@@ -33,10 +33,8 @@ import {
   Archive,
 } from "lucide-react";
 import { api } from "@/lib/api";
-import { formatSessionPruneResult } from "@/lib/session-prune";
 import { shouldRefreshSessions } from "@/lib/session-refresh";
 import {
-  importSummary,
   parseImportSessions,
 } from "@/lib/session-import";
 import type {
@@ -71,6 +69,7 @@ import {
 import { useSystemActions } from "@/contexts/useSystemActions";
 import { useToast } from "@nous-research/ui/hooks/use-toast";
 import { useI18n } from "@/i18n";
+import { operationsText } from "@/i18n/operations-pages";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
 import { isDashboardEmbeddedChatEnabled } from "@/lib/dashboard-flags";
@@ -125,45 +124,48 @@ function sourceBelongsToCategory(
   return !isAutomationSource(source);
 }
 
-function sourceLabel(source: string): string {
+function sourceLabel(source: string, locale: import("@/i18n/types").Locale = "en"): string {
+  let label: string;
   switch (source) {
     case "api_server":
-      return "API server";
+      label = "API server"; break;
     case "acp":
-      return "ACP";
+      label = "ACP"; break;
     case "cli":
-      return "CLI";
+      label = "CLI"; break;
     case "tui":
-      return "TUI";
+      label = "TUI"; break;
     case "telegram":
-      return "Telegram";
+      label = "Telegram"; break;
     case "discord":
-      return "Discord";
+      label = "Discord"; break;
     case "slack":
-      return "Slack";
+      label = "Slack"; break;
     case "whatsapp":
-      return "WhatsApp";
+      label = "WhatsApp"; break;
     case "whatsapp_cloud":
-      return "WhatsApp Cloud";
+      label = "WhatsApp Cloud"; break;
     case "sms":
-      return "SMS";
+      label = "SMS"; break;
     case "cron":
-      return "Cron";
+      label = "Cron"; break;
     case "tool":
-      return "Tool";
+      label = "Tool"; break;
     case "hermes_flow":
-      return "Hermes Flow";
+      label = "Hermes Flow"; break;
     case "vulcan_delegate":
-      return "Vulcan delegate";
+      label = "Vulcan delegate"; break;
     case "webhook":
-      return "Webhook";
+      label = "Webhook"; break;
     default:
-      return source
+      label = source
         .split("_")
         .filter(Boolean)
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(" ");
+      break;
   }
+  return operationsText(locale, label);
 }
 
 /** Render an FTS5 snippet with highlighted matches.
@@ -201,7 +203,7 @@ function ToolCallBlock({
   toolCall: { id: string; function: { name: string; arguments: string } };
 }) {
   const [open, setOpen] = useState(false);
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   let args = toolCall.function.arguments;
   try {
@@ -214,7 +216,7 @@ function ToolCallBlock({
     <div className="mt-2 border border-warning/20 bg-warning/5">
       <ListItem
         onClick={() => setOpen(!open)}
-        aria-label={`${open ? t.common.collapse : t.common.expand} tool call ${toolCall.function.name}`}
+        aria-label={`${open ? t.common.collapse : t.common.expand} ${operationsText(locale, "tool call")} ${toolCall.function.name}`}
         aria-expanded={open}
         className="px-3 py-2 text-xs text-warning hover:bg-warning/10 hover:text-warning"
       >
@@ -298,7 +300,7 @@ function MessageBubble({
   msg: SessionMessage;
   highlight?: string;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   const ROLE_STYLES: Record<
     string,
@@ -330,7 +332,7 @@ function MessageBubble({
     compaction: {
       bg: "bg-muted/50",
       text: "text-muted-foreground italic",
-      label: "Context handoff",
+      label: operationsText(locale, "Context handoff"),
     },
   };
 
@@ -405,7 +407,7 @@ function MessageBubble({
         )}
         {msg.timestamp && (
           <span className="text-xs text-text-tertiary">
-            {timeAgo(msg.timestamp)}
+            {timeAgo(msg.timestamp, locale)}
           </span>
         )}
       </div>
@@ -480,7 +482,7 @@ function SessionRow({
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(session.title ?? "");
   const [renameSaving, setRenameSaving] = useState(false);
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -525,7 +527,7 @@ function SessionRow({
     <>
       <Badge tone="outline" className="text-xs">
         <SourceIcon className={`mr-1 h-3 w-3 ${sourceInfo.color}`} />
-        {session.source ? sourceLabel(session.source) : "local"}
+        {session.source ? sourceLabel(session.source, locale) : operationsText(locale, "local")}
       </Badge>
 
       {resumeInChatEnabled && (
@@ -548,8 +550,8 @@ function SessionRow({
         ghost
         size="icon"
         className="text-muted-foreground hover:text-foreground"
-        aria-label="Rename session"
-        title="Rename session"
+        aria-label={operationsText(locale, "Rename session")}
+        title={operationsText(locale, "Rename session")}
         onClick={(e) => {
           e.stopPropagation();
           setRenameValue(
@@ -567,8 +569,8 @@ function SessionRow({
         ghost
         size="icon"
         className="text-muted-foreground hover:text-foreground"
-        aria-label="Export session"
-        title="Export session JSON"
+        aria-label={operationsText(locale, "Export session")}
+        title={operationsText(locale, "Export session JSON")}
         onClick={(e) => {
           e.stopPropagation();
           onExport(session.id);
@@ -650,7 +652,7 @@ function SessionRow({
                         if (e.key === "Enter") void submitRename();
                         else if (e.key === "Escape") setRenaming(false);
                       }}
-                      placeholder="Session title"
+                      placeholder={operationsText(locale, "Session title")}
                       className="h-7 min-w-0 flex-1 py-0 text-sm"
                       disabled={renameSaving}
                     />
@@ -658,8 +660,8 @@ function SessionRow({
                       ghost
                       size="icon"
                       className="text-muted-foreground hover:text-success"
-                      aria-label="Save title"
-                      title="Save title"
+                      aria-label={operationsText(locale, "Save title")}
+                      title={operationsText(locale, "Save title")}
                       disabled={renameSaving}
                       onClick={() => void submitRename()}
                     >
@@ -673,8 +675,8 @@ function SessionRow({
                       ghost
                       size="icon"
                       className="text-muted-foreground hover:text-foreground"
-                      aria-label="Cancel rename"
-                      title="Cancel rename"
+                      aria-label={operationsText(locale, "Cancel rename")}
+                      title={operationsText(locale, "Cancel rename")}
                       disabled={renameSaving}
                       onClick={() => setRenaming(false)}
                     >
@@ -720,7 +722,7 @@ function SessionRow({
                   </>
                 )}
                 <span className="text-border">&#183;</span>
-                <span className="shrink-0">{timeAgo(session.last_active)}</span>
+                <span className="shrink-0">{timeAgo(session.last_active, locale)}</span>
               </div>
               {snippet && <SnippetHighlight snippet={snippet} />}
             </div>
@@ -870,7 +872,7 @@ export default function SessionsPage() {
   const [pruning, setPruning] = useState(false);
   const [importingSessions, setImportingSessions] = useState(false);
   const { toast, showToast } = useToast();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { setAfterTitle, setEnd } = usePageHeader();
   const { activeAction, actionStatus, dismissLog } = useSystemActions();
   const resumeInChatEnabled = isDashboardEmbeddedChatEnabled();
@@ -887,7 +889,7 @@ export default function SessionsPage() {
   const allSourceOptions = useMemo(() => {
     const entries = Object.entries(stats?.by_source ?? {}).sort(
       ([aSource, aCount], [bSource, bCount]) =>
-        bCount - aCount || sourceLabel(aSource).localeCompare(sourceLabel(bSource)),
+        bCount - aCount || sourceLabel(aSource, locale).localeCompare(sourceLabel(bSource, locale)),
     );
     const seen = new Set(entries.map(([source]) => source));
     for (const source of pinnedSourceSelections) {
@@ -897,7 +899,7 @@ export default function SessionsPage() {
       }
     }
     return entries;
-  }, [pinnedSourceSelections, stats]);
+  }, [locale, pinnedSourceSelections, stats]);
 
   const allSourceNames = useMemo(
     () => allSourceOptions.map(([source]) => source),
@@ -956,29 +958,29 @@ export default function SessionsPage() {
   );
 
   const defaultSourceFilterLabel = useMemo(() => {
-    if (sessionCategory === "chats") return "Any chat source";
-    if (sessionCategory === "automation") return "Any automation source";
+    if (sessionCategory === "chats") return operationsText(locale, "Any chat source");
+    if (sessionCategory === "automation") return operationsText(locale, "Any automation source");
     return t.sessions.anySource;
-  }, [sessionCategory, t.sessions.anySource]);
+  }, [locale, sessionCategory, t.sessions.anySource]);
 
   const sourceMenuTitle = useMemo(() => {
-    if (sessionCategory === "chats") return "Chat sources";
-    if (sessionCategory === "automation") return "Automation sources";
+    if (sessionCategory === "chats") return operationsText(locale, "Chat sources");
+    if (sessionCategory === "automation") return operationsText(locale, "Automation sources");
     return t.sessions.sourceFilter;
-  }, [sessionCategory, t.sessions.sourceFilter]);
+  }, [locale, sessionCategory, t.sessions.sourceFilter]);
 
   const sourceFilterLabel = useMemo(() => {
     if (selectedSources === null) {
       return defaultSourceFilterLabel;
     }
     if (selectedSources.length === 0) {
-      return "No sources";
+      return operationsText(locale, "No sources");
     }
     if (selectedSources.length === 1) {
-      return sourceLabel(selectedSources[0]);
+      return sourceLabel(selectedSources[0], locale);
     }
-    return `${selectedSources.length} sources`;
-  }, [defaultSourceFilterLabel, selectedSources]);
+    return operationsText(locale, "{count} sources", { count: selectedSources.length });
+  }, [defaultSourceFilterLabel, locale, selectedSources]);
 
   const refreshEmptyCount = useCallback(() => {
     api
@@ -1015,13 +1017,13 @@ export default function SessionsPage() {
         onClick={() => setPruneOpen(true)}
         prefix={<Archive />}
       >
-        Prune old sessions
+        {operationsText(locale, "Prune old sessions")}
       </Button>,
     );
     return () => {
       setEnd(null);
     };
-  }, [setEnd]);
+  }, [locale, setEnd]);
 
   useEffect(() => {
     if (!sourceMenuOpen) return;
@@ -1078,13 +1080,16 @@ export default function SessionsPage() {
         const text = await file.text();
         const importedSessions = parseImportSessions(text);
         const result = await api.importSessions(importedSessions);
-        showToast(`Import complete: ${importSummary(result)}`, "success");
+        const summaryParts = [operationsText(locale, "{count} imported", { count: result.imported })];
+        if (result.skipped > 0) summaryParts.push(operationsText(locale, "{count} skipped", { count: result.skipped }));
+        if (result.detached > 0) summaryParts.push(operationsText(locale, "{count} detached from missing parents", { count: result.detached }));
+        showToast(operationsText(locale, "Import complete: {summary}", { summary: summaryParts.join("; ") }), "success");
         clearSelection();
         loadSessions(page, true);
         loadStats();
         refreshEmptyCount();
       } catch (error) {
-        showToast(`Import failed: ${error}`, "error");
+        showToast(operationsText(locale, "Import failed: {error}", { error: String(error) }), "error");
       } finally {
         setImportingSessions(false);
         if (importInputRef.current) importInputRef.current.value = "";
@@ -1097,6 +1102,7 @@ export default function SessionsPage() {
       page,
       refreshEmptyCount,
       showToast,
+      locale,
     ],
   );
 
@@ -1456,13 +1462,13 @@ export default function SessionsPage() {
         setOverviewSessions((prev) =>
           prev.map((s) => (s.id === id ? { ...s, title } : s)),
         );
-        showToast("Session renamed", "success");
+        showToast(operationsText(locale, "Session renamed"), "success");
         loadStats();
       } catch {
-        showToast("Failed to rename session", "error");
+        showToast(operationsText(locale, "Failed to rename session"), "error");
       }
     },
-    [showToast, loadStats],
+    [showToast, loadStats, locale],
   );
 
   const handleExport = useCallback(
@@ -1485,32 +1491,33 @@ export default function SessionsPage() {
         a.click();
         URL.revokeObjectURL(url);
       } catch {
-        showToast("Failed to export session", "error");
+        showToast(operationsText(locale, "Failed to export session"), "error");
       }
     },
-    [showToast],
+    [showToast, locale],
   );
 
   const handlePrune = useCallback(async () => {
     const days = parseInt(pruneDays, 10);
     if (!Number.isFinite(days) || days < 0) {
-      showToast("Enter a valid number of days", "error");
+      showToast(operationsText(locale, "Enter a valid number of days"), "error");
       return;
     }
     setPruning(true);
     try {
       const resp = await api.pruneSessions(days);
-      showToast(formatSessionPruneResult(resp), "success");
+      const summary = operationsText(locale, "Pruned {count} sessions", { count: resp.removed });
+      showToast(resp.skipped_open ? `${summary}. ${operationsText(locale, "Skipped {count} open sessions; prune only removes ended sessions.", { count: resp.skipped_open })}` : summary, "success");
       setPruneOpen(false);
       loadSessions(0);
       setPage(0);
       loadStats();
     } catch {
-      showToast("Failed to prune sessions", "error");
+      showToast(operationsText(locale, "Failed to prune sessions"), "error");
     } finally {
       setPruning(false);
     }
-  }, [pruneDays, showToast, loadSessions, loadStats]);
+  }, [pruneDays, showToast, loadSessions, loadStats, locale]);
 
   const pendingSession = sessionDelete.pendingId
     ? sessions.find((s) => s.id === sessionDelete.pendingId)
@@ -1631,10 +1638,9 @@ export default function SessionsPage() {
       >
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Prune old sessions</DialogTitle>
+            <DialogTitle>{operationsText(locale, "Prune old sessions")}</DialogTitle>
             <DialogDescription>
-              Permanently remove archived sessions whose last activity is older
-              than the given number of days. Active sessions are never pruned.
+              {operationsText(locale, "Permanently remove archived sessions whose last activity is older than the given number of days. Active sessions are never pruned.")}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-1.5">
@@ -1642,7 +1648,7 @@ export default function SessionsPage() {
               htmlFor="prune-days"
               className="text-xs font-medium text-muted-foreground"
             >
-              Older than (days)
+              {operationsText(locale, "Older than (days)")}
             </label>
             <Input
               id="prune-days"
@@ -1671,7 +1677,7 @@ export default function SessionsPage() {
               className="gap-1.5"
             >
               {pruning && <Spinner className="text-sm" />}
-              Prune
+              {operationsText(locale, "Prune")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1683,32 +1689,32 @@ export default function SessionsPage() {
             <span className="text-lg font-semibold tabular-nums leading-none">
               {stats.total}
             </span>
-            <span className="text-xs text-muted-foreground">Total</span>
+            <span className="text-xs text-muted-foreground">{operationsText(locale, "Total")}</span>
           </div>
           <div className="flex flex-col">
             <span className="text-lg font-semibold tabular-nums leading-none text-success">
               {stats.active_store}
             </span>
-            <span className="text-xs text-muted-foreground">Active in store</span>
+            <span className="text-xs text-muted-foreground">{operationsText(locale, "Active in store")}</span>
           </div>
           <div className="flex flex-col">
             <span className="text-lg font-semibold tabular-nums leading-none">
               {stats.archived}
             </span>
-            <span className="text-xs text-muted-foreground">Archived</span>
+            <span className="text-xs text-muted-foreground">{operationsText(locale, "Archived")}</span>
           </div>
           <div className="flex flex-col">
             <span className="text-lg font-semibold tabular-nums leading-none">
               {stats.messages}
             </span>
-            <span className="text-xs text-muted-foreground">Messages</span>
+            <span className="text-xs text-muted-foreground">{operationsText(locale, "Messages")}</span>
           </div>
           {Object.keys(stats.by_source).length > 0 && (
             <div className="flex flex-col">
               <span className="text-lg font-semibold tabular-nums leading-none">
                 {Object.keys(stats.by_source).length}
               </span>
-              <span className="text-xs text-muted-foreground">Sources</span>
+              <span className="text-xs text-muted-foreground">{operationsText(locale, "Sources")}</span>
             </div>
           )}
         </div>
@@ -1875,7 +1881,7 @@ export default function SessionsPage() {
                                 event.stopPropagation();
                                 toggleSourceFilter(source);
                               }}
-                              aria-label={`${t.sessions.sourceFilter}: ${sourceLabel(source)}`}
+                              aria-label={`${t.sessions.sourceFilter}: ${sourceLabel(source, locale)}`}
                             />
                             <button
                               type="button"
@@ -1884,7 +1890,7 @@ export default function SessionsPage() {
                             >
                               <SourceIcon className={`h-3.5 w-3.5 shrink-0 ${sourceColor}`} />
                               <span className="min-w-0 flex-1 truncate">
-                                {sourceLabel(source)}
+                                {sourceLabel(source, locale)}
                               </span>
                               <span className="shrink-0 tabular-nums text-muted-foreground">
                                 {count}
@@ -1963,8 +1969,8 @@ export default function SessionsPage() {
                 className="shrink-0"
                 disabled={importingSessions}
                 onClick={() => importInputRef.current?.click()}
-                aria-label="Import exported sessions"
-                title="Import exported session JSON or JSONL"
+                aria-label={operationsText(locale, "Import exported sessions")}
+                title={operationsText(locale, "Import exported session JSON or JSONL")}
                 prefix={importingSessions ? <Spinner /> : <Upload />}
               >
                 <span className="font-mondwest normal-case text-xs">
@@ -2145,7 +2151,7 @@ export default function SessionsPage() {
                           </>
                         )}
                         {s.message_count} {t.common.msgs} ·{" "}
-                        {timeAgo(s.last_active)}
+                        {timeAgo(s.last_active, locale)}
                       </span>
 
                       {s.preview && s.title && (
@@ -2160,7 +2166,7 @@ export default function SessionsPage() {
                       className="shrink-0 self-start text-xs sm:self-center"
                     >
                       <Database className="mr-1 h-3 w-3" />
-                      {s.source ? sourceLabel(s.source) : "local"}
+                      {s.source ? sourceLabel(s.source, locale) : operationsText(locale, "local")}
                     </Badge>
                   </div>
                 ))}

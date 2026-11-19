@@ -1,0 +1,1498 @@
+--- a/plugins/kanban/dashboard/dist/index.js
++++ b/plugins/kanban/dashboard/dist/index.js
+@@ -63,6 +63,8 @@
+   const RU_KANBAN = {
+     "blockedWaitingHelp": "Ожидает ответа, квоты или зависимостей. Причина — в карточке.",
+     "columnLabels.review": "Проверка",
++    "columnLabels.blocked": "Ожидание и остановки",
++    "columnHelp.blocked": "Причина указана в карточке. Откройте её, чтобы увидеть следующее действие.",
+     "columnHelp.review": "Реализация завершена — ожидает проверки.",
+     "confirmDoneMany": "Отметить {n} задач как выполненные? Захваты исполнителей будут освобождены, а зависимые дочерние задачи станут готовы.",
+     "confirmArchiveMany": "Архивировать {n} задач? Они исчезнут из стандартного вида доски.",
+@@ -276,10 +278,12 @@
+   };
+ 
+   function getColumnLabel(t, status) {
++    if (status === "blocked" && t && /^ru(?:[-_]|$)/i.test(t.__kanbanLocale)) return "Ожидание и остановки";
+     return tx(t, "columnLabels." + status, FALLBACK_COLUMN_LABEL[status] || status);
+   }
+   function getColumnHelp(t, status) {
+     if (status === "blocked") {
++      if (t && /^ru(?:[-_]|$)/i.test(t.__kanbanLocale)) return "Причина и следующее действие — в начале карточки.";
+       return tx(t, "blockedWaitingHelp", "Waiting for input, quota, or dependencies. Open the task for details.");
+     }
+     return tx(t, "columnHelp." + status, FALLBACK_COLUMN_HELP[status] || "");
+@@ -735,6 +739,438 @@
+   // Root page
+   // -------------------------------------------------------------------------
+ 
++  // BEGIN operator-status.js
++// Pure operator-facing summaries for the legacy Kanban UI.
++// This file is injected into the dashboard IIFE; keep it dependency-free.
++
++function compactTaskTitle(title) {
++  var value = String(title == null ? "" : title).trim();
++  // Request ids are useful in the details view, but add no meaning to every
++  // board card. Strip only a leading, well-formed request token.
++  value = value.replace(/^\s*\[req-[a-f0-9]{8,64}\]\s*/i, "");
++  value = value.replace(/^\s*(?:—|–|-|:|·)+\s*/, "");
++  return value.trim() || String(title == null ? "Без названия" : title).trim();
++}
++
++function operatorRoleLabel(assignee) {
++  var value = String(assignee == null ? "" : assignee).trim();
++  var key = value.toLowerCase();
++  var labels = {
++    "team-analyst": "Аналитик",
++    "team-planner": "Планировщик",
++    "team-skeptic": "Скептик",
++    "team-judge": "Судья плана",
++    "team-backend-developer": "Backend-разработчик",
++    "team-backend": "Backend-разработчик",
++    "team-frontend-developer": "Frontend-разработчик",
++    "team-frontend": "Frontend-разработчик",
++    "team-mobile-developer": "Мобильный разработчик",
++    "team-android-developer": "Мобильный разработчик",
++    "team-go-developer": "Go-разработчик",
++    "team-reviewer": "Ревьюер",
++    "team-qa-regression": "QA / регрессия",
++    "team-qa": "QA / регрессия",
++    "team-test-designer": "Проектировщик тестов",
++    "team-controller": "Оркестратор",
++  };
++  if (labels[key]) return labels[key];
++  if (/^team-/.test(value)) {
++    return value.slice(5).split(/[-_]+/).filter(Boolean).map(function (part) {
++      return part.charAt(0).toUpperCase() + part.slice(1);
++    }).join(" ");
++  }
++  return value || "Не назначен";
++}
++
++function operatorStatus(task, context) {
++  task = task || {};
++  context = context || {};
++  var team = context.teamTask || task._team || null;
++  var status = String(task.status || "").toLowerCase();
++  var result = {
++    title: statusLabel(status),
++    reason: "",
++    action: "",
++    tone: "neutral",
++  };
++
++  var isStopped = status === "blocked" || status === "waiting_tests";
++  var workflowStop = isStopped ? teamWorkflowStop(team) : null;
++  var owner = isStopped ? ownerInput(team, context) : null;
++  if (owner) {
++    result.title = "Нужен ваш ответ";
++    result.reason = owner.reason;
++    result.action = owner.action;
++    result.tone = "warning";
++    if (owner.href) result.href = owner.href;
++    if (owner.linkLabel) result.linkLabel = owner.linkLabel;
++    return result;
++  }
++  if (workflowStop) {
++    var runs = Array.isArray(context.runs) ? context.runs : [];
++    if (team.assignment_state === "pending" && !task.started_at && runs.length === 0) {
++      workflowStop.title = "Ожидает возобновления команды";
++      workflowStop.reason = "Командный процесс приостановлен. " + workflowStop.reason;
++      workflowStop.action = "Ответ от вас сейчас не запрошен. Откройте запрос, чтобы увидеть состояние команды.";
++    }
++    return workflowStop;
++  }
++
++  var testWait = team && team.test_wait || task.test_wait || null;
++  var testWaitStatus = String(team && team.status || "").toLowerCase();
++  var latestRun = latestOperatorRun(context);
++  // A new attempt or completed run supersedes a stale wait projection.
++  var latestIsBlocked = !latestRun || String(latestRun.status || "").toLowerCase() === "blocked";
++  if (isStopped && latestIsBlocked && (status === "waiting_tests" || testWaitStatus === "waiting_tests" || testWait || nativeTestWait(task, context))) {
++    result.title = "Ожидает проверку";
++    result.reason = "Проверка выполняется отдельным заданием. Бюджет агента и слот свободны.";
++    result.action = "Действие не требуется. Команда продолжит по результату проверки.";
++    result.tone = "info";
++    return result;
++  }
++
++  if (status === "blocked") {
++    var teamReason = currentQuotaReason(team, status);
++    var quota = quotaKind(teamReason) || quotaKind(currentFailure(task, context));
++    if (quota === "concurrency") {
++      result.title = "Ожидает свободный слот";
++      result.reason = "Ждёт свободного слота модели.";
++      result.action = "От вас ничего не требуется. Диспетчер продолжит, когда слот освободится.";
++      result.tone = "warning";
++      return result;
++    }
++    if (quota === "limit") {
++      result.title = "Ожидает ресурс модели";
++      result.reason = "Достигнут лимит доступного ресурса модели.";
++      result.action = "От вас ничего не требуется. Срок восстановления в данных не указан.";
++      result.tone = "warning";
++      return result;
++    }
++    var runs = Array.isArray(context.runs) ? context.runs : [];
++
++    var deps = unresolvedParents(task, context);
++    if (deps.length) {
++      result.title = "Ожидает предыдущий этап";
++      result.reason = "Ждёт завершения: " + deps.map(function (item) { return item.title; }).join(", ") + ".";
++      result.action = deps.some(function (item) { return item.status === "archived"; })
++        ? "Проверьте зависимость: архивная задача не выполнена; её нужно вернуть в работу или снять связь."
++        : "От вас ничего не требуется. Задача продолжится после выполнения зависимости.";
++      result.tone = "warning";
++      return result;
++    }
++
++    var failure = currentFailure(task, context);
++    if (failure) {
++      result.title = "Остановлена из-за ошибки";
++      result.reason = readableFailure(failure);
++      result.action = "Нужна проверка последнего запуска и устранение этой ошибки.";
++      result.tone = "error";
++      return result;
++    }
++
++    if (team && team.assignment_state === "pending" && String(team.status || "").toLowerCase() === status && !task.started_at && runs.length === 0) {
++      result.title = "Ожидает допуска к запуску";
++      var stageLabel = shortOperatorText(team.stage_label || team.stage || "не указан", 100);
++      result.reason = "Оркестратор ещё не запустил эту задачу. Текущий этап запроса: «" + stageLabel + "».";
++      result.action = "Откройте запрос, чтобы увидеть текущую работу команды.";
++      result.tone = "warning";
++      var requestId = team.request_id || team.requestId;
++      if (requestId) {
++        result.href = "/engineering-team?request=" + encodeURIComponent(requestId);
++        result.linkLabel = "Открыть запрос";
++      }
++      return result;
++    }
++
++    result.title = "Причина требует уточнения";
++    result.reason = "Причина остановки не записана в доступных данных.";
++    result.action = "Откройте историю событий и последний запуск задачи.";
++    result.tone = "warning";
++    return result;
++  }
++
++  if (status === "running") {
++    result.reason = "Исполнитель сейчас работает над задачей.";
++    result.action = "Ждите обновления результата.";
++    result.tone = "info";
++  } else if (status === "review") {
++    result.reason = "Реализация ожидает проверки.";
++    result.action = "Проверьте результат или дождитесь ревьюера.";
++    result.tone = "warning";
++  } else if (status === "done" || status === "complete" || status === "completed") {
++    result.reason = "Задача завершена.";
++    result.action = "Действие не требуется.";
++    result.tone = "success";
++  } else if (status === "ready" || status === "todo" || status === "triage" || status === "scheduled") {
++    result.reason = status === "ready" ? "Задача готова к запуску." : "Задача ещё не выполняется.";
++    result.action = status === "ready"
++      ? (task.assignee ? "Диспетчер запустит её, когда появится ресурс." : "Назначьте роль исполнителя, чтобы задачу можно было запустить.")
++      : "Проверьте требования и назначение, если запуск задерживается.";
++    result.tone = "warning";
++  } else {
++    result.reason = "Текущий статус: " + (status || "не указан") + ".";
++    result.action = "Откройте подробности задачи.";
++    result.tone = "neutral";
++  }
++  return result;
++}
++
++function latestOperatorRun(context) {
++  var runs = Array.isArray(context.runs) ? context.runs.slice() : [];
++  runs.sort(function (a, b) {
++    // Native run ids are monotonically increasing; dates can have equal seconds.
++    var ai = Number(a.id == null ? a.run_id : a.id);
++    var bi = Number(b.id == null ? b.run_id : b.id);
++    if (Number.isSafeInteger(ai) && ai > 0 && Number.isSafeInteger(bi) && bi > 0) return bi - ai;
++    return runTime(b) - runTime(a);
++  });
++  return runs[0] || null;
++}
++
++function nativeTestWait(task, context) {
++  if (String(task.status || "").toLowerCase() !== "blocked") return false;
++  var marker = /^Ожидает проверку (?:backend|checks):[0-9a-f]{64}$/;
++  var latest = latestOperatorRun(context);
++  if (latest && String(latest.status || "").toLowerCase() !== "blocked") return false;
++  // Only structured native reasons are considered, never task text or comments.
++  var reason = task.blocked_reason == null ? task.block_reason : task.blocked_reason;
++  if (reason != null) return marker.test(String(reason));
++  if (latest && latest.summary != null) return marker.test(String(latest.summary));
++  var events = Array.isArray(context.events) ? context.events.slice() : [];
++  events.sort(function (a, b) { return eventTime(b) - eventTime(a) || Number(b.id || 0) - Number(a.id || 0); });
++  var event = events[0];
++  if (!event || event.kind !== "blocked") return false;
++  if (latest && event.run_id != null && String(event.run_id) !== String(latest.id == null ? latest.run_id : latest.id)) return false;
++  if (latest && eventTime(event) < runTime(latest)) return false;
++  var payload = event.payload;
++  if (typeof payload === "string") {
++    try { payload = JSON.parse(payload); } catch (_) { return false; }
++  }
++  return !!(payload && typeof payload === "object" && marker.test(String(payload.reason || "")));
++}
++
++function teamWorkflowStop(team) {
++  if (!team || String(team.stage || "").toLowerCase() !== "blocked") return null;
++  var blocker = String(team.blocker || team.blocked_reason || "").trim();
++  if (!blocker) return null;
++  var requestId = team.request_id || team.requestId;
++  var result = {
++    title: "Процесс команды остановлен",
++    reason: "Контроллер приостановил выполнение запроса. Подробная причина доступна в запросе.",
++    action: "Техническая причина остановки требует проверки. Ответ от вас сейчас не запрошен.",
++    tone: "warning",
++  };
++  if (/^rework\s+limit\s+reached:\s*qa\s+check\b[\s\S]*?non-zero\s+exit_code\b/i.test(blocker)) {
++    result.title = "Не принят отчёт проверки";
++    result.reason = "Контроллер не принял результат QA. Автоматическое продолжение остановлено; требуется разбор отчёта.";
++    result.action = "Проверьте отчёт и причину отказа в карточке запроса. Ответ от вас сейчас не запрошен.";
++    result.tone = "error";
++  }
++  if (requestId) {
++    result.href = "/engineering-team?request=" + encodeURIComponent(requestId);
++    result.linkLabel = "Открыть запрос";
++  }
++  return result;
++}
++
++function statusLabel(status) {
++  var labels = {
++    blocked: "Остановлена",
++    waiting_tests: "Ожидает проверку",
++    running: "В работе",
++    review: "На проверке",
++    done: "Готово",
++    complete: "Готово",
++    completed: "Готово",
++    ready: "Готова к запуску",
++    todo: "В очереди",
++    triage: "Нужна сортировка",
++    scheduled: "Запланирована",
++  };
++  return labels[status] || "Статус задачи";
++}
++
++function quotaKind(value) {
++  var text = String(value || "").toLowerCase();
++  if (!text) return "";
++  if (/max[_ -]?concurrent|reached\s+max\s+concurrent|concurrent\s+(?:limit|slot)|слот(?:а|ов)?\s+занят|максимум\s+одновременн/.test(text)) return "concurrency";
++  if (/quota|headroom|weekly|limit|лимит|остат(?:ок|ка)\s+(?:квот|подписк)/.test(text)) return "limit";
++  return "";
++}
++
++function currentQuotaReason(team, taskStatus) {
++  if (!team || team.assignment_state !== "pending" || String(team.status || "").toLowerCase() !== taskStatus) return "";
++  if (team.quota_reason) return String(team.quota_reason);
++  var selection = String(team.selection_reason || "");
++  var marker = selection.match(/Выбор ресурса:\s*([\s\S]*)$/i);
++  return marker ? marker[1].trim() : "";
++}
++
++function ownerInput(team, context) {
++  if (!team) return null;
++  var approval = team.approval || {};
++  var requestId = team.request_id || team.requestId;
++  var blocker = String(team.blocker || team.blocked_reason || "").trim();
++  var stage = String(team.stage || "").toLowerCase();
++  var awaitingStages = ["awaiting_owner_input", "awaiting_requirements", "awaiting_plan", "awaiting_delivery"];
++  var awaiting = awaitingStages.indexOf(stage) !== -1 || approval.status === "pending" || approval.status === "needed" || approval.required === true;
++  if (!awaiting) return null;
++  var reason = blocker ? shortOperatorText(blocker, 150) : "Команда ждёт вашего ответа или согласования.";
++  return {
++    reason: reason,
++    action: "Откройте карточку запроса и ответьте команде.",
++    href: requestId ? "/engineering-team?request=" + encodeURIComponent(requestId) : undefined,
++    linkLabel: requestId ? "Открыть запрос" : undefined,
++  };
++}
++
++function unresolvedParents(task, context) {
++  var links = context.links || {};
++  var parents = Array.isArray(links.parents) ? links.parents : [];
++  var all = Array.isArray(context.allTasks) ? context.allTasks : [];
++  return parents.map(function (parent) {
++    var id = typeof parent === "string" ? parent : parent && (parent.id || parent.parent_id || parent.task_id);
++    var found = typeof parent === "object" && parent ? parent : all.find(function (item) { return item && item.id === id; });
++    if (!found || !id || id === task.id) return null;
++    var parentStatus = String(found.status || "").toLowerCase();
++    // Unknown parents are omitted: without a status we cannot explain the
++    // block. Archived work does not satisfy a dependency in the native board.
++    if (!parentStatus || parentStatus === "done" || parentStatus === "complete" || parentStatus === "completed") return null;
++    return { id: id, title: compactTaskTitle(found.title || id), status: parentStatus };
++  }).filter(Boolean);
++}
++
++function currentFailure(task, context) {
++  var runs = Array.isArray(context.runs) ? context.runs.slice() : [];
++  runs.sort(function (a, b) { return runTime(b) - runTime(a); });
++  var latest = runs[0];
++  var latestFailed = latest && /failed|error|gave[_ -]?up|timeout|timed[_ -]?out/i.test(String(latest.status || "") + " " + String(latest.outcome || ""));
++  // A newer successful or active run supersedes an older failure.
++  if (latest && !latestFailed) return "";
++  if (latestFailed && (latest.error || latest.summary || latest.outcome)) return latest.error || latest.summary || latest.outcome;
++  if (task.last_failure_error && (task.consecutive_failures == null || Number(task.consecutive_failures) > 0)) return task.last_failure_error;
++  var diagnostics = Array.isArray(context.diagnostics) ? context.diagnostics : [];
++  var diag = diagnostics.find(function (item) {
++    return item && /error|failure|failed|blocked/i.test(String(item.severity || "") + " " + String(item.kind || "")) && (item.detail || item.title);
++  });
++  if (diag) return diag.detail || diag.title;
++  var events = Array.isArray(context.events) ? context.events.slice() : [];
++  events.sort(function (a, b) { return eventTime(b) - eventTime(a); });
++  var event = events[0];
++  if (!event || !/failed|error|gave_up|timeout/i.test(String(event.kind || ""))) return "";
++  if (event) {
++    var payload = event.payload;
++    if (typeof payload === "string") {
++      try { payload = JSON.parse(payload); } catch (_) { return payload; }
++    }
++    if (payload && typeof payload === "object") return payload.error || payload.message || payload.reason || payload.detail || event.kind;
++    return event.kind;
++  }
++  return "";
++}
++
++function readableFailure(value) {
++  var text = String(value || "").replace(/\s+/g, " ").trim();
++  if (!text) return "Последний запуск завершился ошибкой.";
++  var lower = text.toLowerCase();
++  if (/max[_ -]?concurrent|reached max concurrent/.test(lower)) return "Ждёт свободного слота модели.";
++  if (/iteration(?:s)?[ _-]?(?:budget|limit)|max(?:imum)?[ _-]?iterations|reached.{0,24}iterations|gave[_ -]?up.{0,24}\d+\s*\/\s*\d+/i.test(lower)) return "Исчерпан лимит попыток этого запуска.";
++  if (/authentication|unauthorized|invalid[_ -]?api[_ -]?key|401/.test(lower)) return "Не прошла авторизация провайдера модели.";
++  if (/rate.?limit|too many requests|\b429\b/.test(lower)) return "Провайдер временно ограничил частоту запросов.";
++  if (/timed?\s*out|timeout|deadline exceeded/.test(lower)) return "Запуск превысил допустимое время.";
++  if (/connection refused|connection reset|network is unreachable|dns|name or service not known/.test(lower)) return "Не удалось подключиться к нужному сервису.";
++  if (/no space left|disk full/.test(lower)) return "На диске закончилось место.";
++  if (/permission denied|operation not permitted/.test(lower)) return "Не хватает прав для выполнения операции.";
++  if (/test.*fail|failed.*test|assertionerror/.test(lower)) return "Не прошли проверки или тесты.";
++  // Avoid flooding the board with paths, traces and machine-specific data.
++  text = text.replace(/(?:\/[^\s:]+){2,}/g, "путь к файлу").replace(/\b0x[0-9a-f]+\b/gi, "");
++  return shortOperatorText(text, 180);
++}
++
++function shortOperatorText(value, maxLength) {
++  var text = String(value || "").replace(/\s+/g, " ").trim();
++  if (text.length > maxLength) text = text.slice(0, maxLength - 1).trimEnd() + "…";
++  return text;
++}
++
++function runTime(run) {
++  return timestamp(run && (run.ended_at || run.started_at || run.created_at));
++}
++function eventTime(event) {
++  return timestamp(event && (event.created_at || event.timestamp));
++}
++function timestamp(value) {
++  if (typeof value === "number") return value < 100000000000 ? value * 1000 : value;
++  var parsed = Date.parse(value || "");
++  return Number.isFinite(parsed) ? parsed : 0;
++}
++  // END operator-status.js
++
++  function mapTeamTasks(envelope, nativeBoard) {
++    const tasks = {};
++    for (const request of (envelope && envelope.requests) || []) {
++      // Controller cards are intentionally absent from public role assignments.
++      // Bind them via their controller-owned idempotency key, never prompt text.
++      for (const col of (nativeBoard && nativeBoard.columns) || []) {
++        for (const root of col.tasks || []) {
++          if (root.created_by === "hermes-team-controller" && root.assignee === "team-controller" &&
++              String(root.idempotency_key || "").startsWith(request.id + ":root:")) {
++            tasks[root.id] = { request_id: request.id, status: root.status,
++              stage: request.stage, stage_label: request.stage_label, blocker: request.blocker,
++              approval: request.approval, prerequisites: request.prerequisites || [] };
++          }
++        }
++      }
++      for (const task of request.tasks || []) {
++        tasks[task.id] = Object.assign({}, task, { request_id: request.id,
++          stage: request.stage, stage_label: request.stage_label, blocker: request.blocker,
++          approval: request.approval, prerequisites: request.prerequisites || [] });
++      }
++    }
++    return tasks;
++  }
++
++  function operatorColumns(columns, options) {
++    const visible = columns.filter(function (col) {
++      if (options.showAllColumns) return true;
++      if ((col.name === "done" || col.name === "archived") && !options.showDone && !options.forceHistory) return false;
++      return col.tasks.length > 0;
++    });
++    if (visible.length) return visible;
++    // An empty board keeps an obvious place to create the first task.
++    return columns.filter(function (col) { return col.name === "triage"; });
++  }
++
++  async function loadBlockedContexts(data, board, cache) {
++    const blocked = data.columns.reduce(function (list, col) {
++      return list.concat(col.tasks.filter(function (task) { return task.status === "blocked"; }));
++    }, []);
++    const contexts = {};
++    const pending = [];
++    for (const task of blocked) {
++      const key = (board || "default") + ":" + task.id;
++      const revision = JSON.stringify([task.status, task.comment_count, task.current_run_id,
++        task.last_failure_error, task.consecutive_failures, task.block_kind, task.link_counts]);
++      const old = cache.get(key);
++      if (old && old.revision === revision && Date.now() - old.at < 60000) contexts[task.id] = old.context;
++      else pending.push({ task, key, revision });
++    }
++    for (let offset = 0; offset < pending.length; offset += 4) {
++      await Promise.all(pending.slice(offset, offset + 4).map(async function (item) {
++        try {
++          const detail = await SDK.fetchJSON(withBoard(`${API}/tasks/${encodeURIComponent(item.task.id)}`, board));
++          // A status change in flight must not attach an old failure to a new run.
++          if (!detail.task || detail.task.status !== item.task.status) return;
++          const context = { links: detail.links, runs: detail.runs, events: detail.events,
++            diagnostics: detail.task.diagnostics || [] };
++          contexts[item.task.id] = context;
++          cache.set(item.key, { revision: item.revision, at: Date.now(), context });
++        } catch (_) { /* Missing diagnostics are explicit in operatorStatus. */ }
++      }));
++    }
++    return contexts;
++  }
++
+   function KanbanPage() {
+     const { t } = useI18n();
+     const kanbanDialogs = useKanbanDialogs(t);
+@@ -760,7 +1196,14 @@
+     const [assigneeFilter, setAssigneeFilter] = useState("");
+     const [includeArchived, setIncludeArchived] = useState(false);
+     const [search, setSearch] = useState("");
+-    const [laneByProfile, setLaneByProfile] = useState(true);
++    const [laneByProfile, setLaneByProfile] = useState(false);
++    const [showAllColumns, setShowAllColumns] = useState(false);
++    const [showDone, setShowDone] = useState(false);
++    const [showCreateTask, setShowCreateTask] = useState(false);
++    const [teamTasks, setTeamTasks] = useState({});
++    const [taskContexts, setTaskContexts] = useState({});
++    const contextCacheRef = useRef(new Map());
++    const loadVersionRef = useRef(0);
+     const [configApplied, setConfigApplied] = useState(false);
+ 
+     const [selectedTaskId, setSelectedTaskId] = useState(null);
+@@ -789,7 +1232,7 @@
+           setConfig(c);
+           if (!configApplied) {
+             if (c.default_tenant) setTenantFilter(c.default_tenant);
+-            if (typeof c.lane_by_profile === "boolean") setLaneByProfile(c.lane_by_profile);
++            // Compact view is the default; profile grouping remains available in view options.
+             if (typeof c.include_archived_by_default === "boolean") setIncludeArchived(c.include_archived_by_default);
+             setConfigApplied(true);
+           }
+@@ -797,23 +1240,40 @@
+         .catch(function () { setConfig({ render_markdown: true }); });
+     }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+ 
+-    // --- fetch full board ---------------------------------------------------
++    // Board data and one team snapshot share a refresh. Details are fetched only
++    // for waiting cards, bounded to four in flight and cached by native revision.
+     const loadBoard = useCallback(() => {
++      const version = ++loadVersionRef.current;
+       const qs = new URLSearchParams();
+       if (tenantFilter) qs.set("tenant", tenantFilter);
+       if (includeArchived) qs.set("include_archived", "true");
+       const url = qs.toString() ? `${API}/board?${qs}` : `${API}/board`;
+-      return SDK.fetchJSON(withBoard(url, board))
+-        .then(function (data) {
+-          setBoardData(data);
+-          cursorRef.current = data.latest_event_id || 0;
+-          setError(null);
+-        })
+-        .catch(function (err) {
+-          setError(String(err && err.message ? err.message : err));
+-        })
+-        .finally(function () { setLoading(false); });
++      return Promise.all([
++        SDK.fetchJSON(withBoard(url, board)),
++        SDK.fetchJSON("/api/plugins/engineering-team/requests").catch(function () { return null; }),
++      ]).then(function (results) {
++        if (loadVersionRef.current !== version) return;
++        const data = results[0];
++        setBoardData(data);
++        setTeamTasks(mapTeamTasks(results[1], data));
++        cursorRef.current = data.latest_event_id || 0;
++        setError(null);
++        loadBlockedContexts(data, board, contextCacheRef.current).then(function (contexts) {
++          if (loadVersionRef.current === version) setTaskContexts(contexts);
++        });
++      }).catch(function (err) {
++        if (loadVersionRef.current === version) setError(String(err && err.message ? err.message : err));
++      }).finally(function () {
++        if (loadVersionRef.current === version) setLoading(false);
++      });
+     }, [tenantFilter, includeArchived, board]);
++
++    useEffect(function () {
++      const timer = window.setInterval(function () {
++        if (!document.hidden) loadBoard();
++      }, 30000);
++      return function () { window.clearInterval(timer); };
++    }, [loadBoard]);
+ 
+     // --- load list of boards for the switcher ------------------------------
+     const loadBoardList = useCallback(function () {
+@@ -892,7 +1352,10 @@
+                 setTaskEventTick(function (prev) {
+                   const next = Object.assign({}, prev);
+                   for (const e of msg.events) {
+-                    if (e && e.task_id) next[e.task_id] = (next[e.task_id] || 0) + 1;
++                    if (e && e.task_id) {
++                      next[e.task_id] = (next[e.task_id] || 0) + 1;
++                      contextCacheRef.current.delete((board || "default") + ":" + e.task_id);
++                    }
+                   }
+                   return next;
+                 });
+@@ -927,9 +1390,19 @@
+       };
+     }, [!!boardData, board, scheduleReload]);
+ 
++    // Keep operator context separate from persisted task data.
++    const enrichedBoard = useMemo(function () {
++      if (!boardData) return null;
++      return Object.assign({}, boardData, { columns: boardData.columns.map(function (col) {
++        return Object.assign({}, col, { tasks: col.tasks.map(function (task) {
++          return Object.assign({}, task, { _team: teamTasks[task.id] || null, _operatorContext: taskContexts[task.id] || {} });
++        }) });
++      }) });
++    }, [boardData, teamTasks, taskContexts]);
++
+     // --- filtering ----------------------------------------------------------
+     const filteredBoard = useMemo(function () {
+-      if (!boardData) return null;
++      if (!enrichedBoard) return null;
+       const q = search.trim().toLowerCase();
+       const filterTask = function (t) {
+         if (tenantFilter && t.tenant !== tenantFilter) return false;
+@@ -940,12 +1413,12 @@
+         }
+         return true;
+       };
+-      return Object.assign({}, boardData, {
+-        columns: boardData.columns.map(function (col) {
++      return Object.assign({}, enrichedBoard, {
++        columns: enrichedBoard.columns.map(function (col) {
+           return Object.assign({}, col, { tasks: col.tasks.filter(filterTask) });
+         }),
+       });
+-    }, [boardData, tenantFilter, assigneeFilter, search]);
++    }, [enrichedBoard, tenantFilter, assigneeFilter, search]);
+ 
+     // --- actions ------------------------------------------------------------
+     // Performs the actual move (optimistic UI + PATCH) once any required
+@@ -1278,7 +1751,10 @@
+       // Optimistic UI: clear the current grid + show loading, reset the
+       // event cursor so the WS reopens aligned to the new board's
+       // latest_event_id on the next loadBoard.
++      ++loadVersionRef.current;
+       setBoardData(null);
++      setTeamTasks({});
++      setTaskContexts({});
+       cursorRef.current = 0;
+       setLoading(true);
+       setBoard(nextSlug);
+@@ -1389,12 +1865,21 @@
+     if (!filteredBoard) return null;
+ 
+     const renderMd = !config || config.render_markdown !== false;
++    const allTasks = enrichedBoard.columns.reduce(function (acc, c) { return acc.concat(c.tasks); }, []);
++    const displayBoard = Object.assign({}, filteredBoard, { columns: operatorColumns(filteredBoard.columns, {
++      showAllColumns, showDone, forceHistory: !!(search.trim() || tenantFilter || assigneeFilter || includeArchived),
++    }) });
++    const visibleCount = displayBoard.columns.reduce(function (n, c) { return n + c.tasks.length; }, 0);
++    const filteredCount = filteredBoard.columns.reduce(function (n, c) { return n + c.tasks.length; }, 0);
++    const doneCount = filteredBoard.columns.filter(function (c) { return c.name === "done" || c.name === "archived"; })
++      .reduce(function (n, c) { return n + c.tasks.length; }, 0);
+ 
+     return h(ErrorBoundary, null,
+       h("div", { className: "hermes-kanban flex flex-col gap-4" },
+         h(BoardSwitcher, {
+           board: board,
+           boardList: boardList,
++          totalTasks: allTasks.length,
+           onSwitch: switchBoard,
+           onNewClick: function () { setShowNewBoard(true); },
+           onSettingsClick: function () { setShowBoardSettings(true); },
+@@ -1426,14 +1911,27 @@
+           assigneeFilter, setAssigneeFilter,
+           includeArchived, setIncludeArchived,
+           laneByProfile, setLaneByProfile,
++          showAllColumns, setShowAllColumns, showDone, setShowDone, doneCount,
++          onNewTask: function () { setShowCreateTask(true); },
+           search, setSearch,
+           onNudgeDispatch: function () {
+             SDK.fetchJSON(withBoard(`${API}/dispatch?max=8`, board), { method: "POST" })
+               .then(loadBoard)
+               .catch(function (e) { setError(String(e.message || e)); });
+           },
+-          onRefresh: loadBoard,
++          onRefresh: function () { contextCacheRef.current.clear(); loadBoard(); },
+         }),
++        h("p", { className: "hermes-kanban-view-hint", role: "status" },
++          `Показано ${visibleCount} из ${filteredCount} задач. `,
++          visibleCount < filteredCount ? "Завершённые — в истории. " : "",
++          "Нажмите на карточку — причина ожидания и следующее действие будут в начале."),
++        showCreateTask ? h(InlineCreate, {
++          columnName: "triage", allTasks,
++          defaultWorkspaceKind: (boardList.find(function (item) { return item.slug === board; }) || {}).default_workspace_kind || "scratch",
++          defaultWorkspacePath: (boardList.find(function (item) { return item.slug === board; }) || {}).default_workdir || "",
++          onSubmit: function (body) { return createTask(body).then(function () { setShowCreateTask(false); }); },
++          onCancel: function () { setShowCreateTask(false); },
++        }) : null,
+        selectedIds.size > 0 ? h(BulkActionBar, {
+          count: selectedIds.size,
+          assignees: (boardData && boardData.assignees) || [],
+@@ -1448,7 +1946,7 @@
+           dialogState: kanbanDialogs.dialogState,
+         }),
+         h(BoardColumns, {
+-          board: filteredBoard,
++          board: displayBoard,
+           boardMeta: boardList.find(function (item) { return item.slug === board; }) || null,
+           laneByProfile,
+           selectedIds,
+@@ -1465,7 +1963,7 @@
+           onDeleteSelected: deleteSelected,
+           onOpen: setSelectedTaskId,
+           onCreate: createTask,
+-          allTasks: boardData.columns.reduce(function (acc, c) { return acc.concat(c.tasks); }, []),
++          allTasks: allTasks,
+         }),
+         selectedTaskId ? h(TaskDrawer, {
+           taskId: selectedTaskId,
+@@ -1474,9 +1972,10 @@
+           onOpenTask: setSelectedTaskId,
+           onRefresh: loadBoard,
+           renderMarkdown: renderMd,
+-          allTasks: boardData.columns.reduce(function (acc, c) { return acc.concat(c.tasks); }, []),
++          allTasks: allTasks,
+           assignees: (boardData && boardData.assignees) || [],
+           eventTick: taskEventTick[selectedTaskId] || 0,
++          teamTask: teamTasks[selectedTaskId] || null,
+           // Hook for the side-drawer's doPatch to use the same in-app
+           // dialog machinery as the column-card flow. TaskDetail also
+           // owns its own kanbanDialogs so the dialog portal mounts in
+@@ -2208,7 +2707,7 @@
+     const list = props.boardList || [];
+     const current = list.find(function (b) { return b.slug === props.board; });
+     const currentName = current && current.name ? current.name : props.board;
+-    const currentTotal = current ? current.total : 0;
++    const currentTotal = props.totalTasks != null ? props.totalTasks : (current ? current.total : 0);
+     const hasMultipleBoards = list.length > 1;
+ 
+     // Hide entirely when only the default board exists AND it's empty —
+@@ -2686,83 +3185,39 @@
+   // -------------------------------------------------------------------------
+ 
+   function BoardToolbar(props) {
+-    const { t, uiText } = useI18n();
++    const { t } = useI18n();
+     const tenants = (props.board && props.board.tenants) || [];
+     const assignees = (props.board && props.board.assignees) || [];
+-    return h("div", { className: "flex flex-wrap items-end gap-3" },
+-      h("div", { className: "flex flex-col gap-1",
+-                 title: uiText("Fuzzy-match tasks by id, title, or description. Matches across all columns.", "Поиск задач по ID, названию или описанию во всех колонках." ) },
+-        h(Label, { className: "text-xs text-muted-foreground" }, tx(t, "search", "Search")),
+-        h(Input, {
+-          placeholder: tx(t, "filterCards", "Filter cards…"),
+-          value: props.search,
+-          onChange: function (e) { props.setSearch(e.target.value); },
+-          className: "w-56 h-8",
+-        }),
+-      ),
+-      h("div", { className: "flex flex-col gap-1",
+-                 title: uiText("Tenants are free-form tags on a task (e.g. customer, project, team). Set them via the task drawer or kanban_create.", "Тенант — произвольная метка задачи, например клиент, проект или команда. Укажите её в карточке задачи или через kanban_create.") },
+-        h(Label, { className: "text-xs text-muted-foreground" }, tx(t, "tenant", "Tenant")),
+-        h(Select, Object.assign({
+-          value: props.tenantFilter,
+-          className: "h-8",
+-        }, selectChangeHandler(props.setTenantFilter)),
+-          h(SelectOption, { value: "" }, tx(t, "allTenants", "All tenants")),
+-          tenants.map(function (tn) {
+-            return h(SelectOption, { key: tn, value: tn }, tn);
+-          }),
+-        ),
+-      ),
+-      h("div", { className: "flex flex-col gap-1",
+-                 title: uiText("Filter by assigned Hermes profile. Profiles are the named agent identities that claim and work on tasks.", "Фильтр по профилю Hermes — имени агента, который получает и выполняет задачи.") },
+-        h(Label, { className: "text-xs text-muted-foreground" }, tx(t, "assignee", "Assignee")),
+-        h(Select, Object.assign({
+-          value: props.assigneeFilter,
+-          className: "h-8",
+-        }, selectChangeHandler(props.setAssigneeFilter)),
+-          h(SelectOption, { value: "" }, tx(t, "allProfiles", "All profiles")),
+-          assignees.map(function (a) {
+-            return h(SelectOption, { key: a, value: a }, a);
+-          }),
+-        ),
+-      ),
+-      h("label", { className: "flex items-center gap-2 text-xs",
+-                   title: uiText("Include archived tasks in the board view. Archived tasks are hidden by default.", "Показывать архивные задачи. По умолчанию они скрыты." ) },
+-        h(Checkbox, {
+-          checked: props.includeArchived,
+-          onCheckedChange: function (checked) { props.setIncludeArchived(checked === true); },
+-        }),
+-        tx(t, "showArchived", "Show archived"),
+-      ),
+-      h("label", { className: "flex items-center gap-2 text-xs",
+-                   title: uiText("Group the Running column by assigned profile", "Группировать колонку «В работе» по назначенному профилю") },
+-        h(Checkbox, {
+-          checked: props.laneByProfile,
+-          onCheckedChange: function (checked) { props.setLaneByProfile(checked === true); },
+-        }),
+-        tx(t, "lanesByProfile", "Lanes by profile"),
+-      ),
+-      h("div", { className: "flex-1" }),
+-      h(Button, {
+-        onClick: props.onNudgeDispatch,
+-        size: "sm",
+-        title: uiText("Wake the dispatcher to claim ready tasks now instead of waiting for the next tick. Use this after adding tasks if you want them picked up immediately.", "Запустить диспетчер сейчас, чтобы он взял готовые задачи, не дожидаясь следующего цикла."),
+-      }, tx(t, "nudgeDispatcher", "Nudge dispatcher")),
+-      h(Button, {
+-        onClick: props.onRefresh,
+-        size: "sm",
+-        title: uiText("Reload the board from the database. The board auto-refreshes on task events; this is for forcing a re-read.", "Заново загрузить доску из базы. Обычно она обновляется автоматически при изменении задач."),
+-      }, tx(t, "refresh", "Refresh")),
+-      h(Button, {
+-        onClick: function () {
+-          props.setSearch("");
+-          props.setTenantFilter("");
+-          props.setAssigneeFilter("");
+-          props.setIncludeArchived(false);
+-        },
+-        size: "sm",
+-        title: uiText("Clear all active filters (search, tenant, assignee, archived).", "Сбросить поиск и фильтры по тенанту, исполнителю и архиву."),
+-      }, tx(t, "clearFilters", "Clear filters")),
++    function toggle(label, checked, setter) {
++      return h("label", { className: "hermes-kanban-view-toggle" },
++        h(Checkbox, { checked: checked, onCheckedChange: function (value) { setter(value === true); } }), label);
++    }
++    return h("div", { className: "hermes-kanban-toolbar" },
++      h("div", { className: "hermes-kanban-toolbar-main" },
++        h(Input, { value: props.search, placeholder: "Найти задачу…", "aria-label": "Поиск задач",
++          onChange: function (e) { props.setSearch(e.target.value); } }),
++        h(Select, Object.assign({ value: props.assigneeFilter, "aria-label": "Исполнитель" }, selectChangeHandler(props.setAssigneeFilter)),
++          h(SelectOption, { value: "" }, "Все исполнители"),
++          assignees.map(function (a) { return h(SelectOption, { key: a, value: a }, operatorRoleLabel(a)); })),
++        h(Button, { onClick: props.onRefresh, size: "sm" }, "Обновить"),
++        h(Button, { onClick: props.onNewTask, size: "sm" }, "+ Задача")),
++      h("div", { className: "hermes-kanban-toolbar-secondary" },
++        toggle(`История · ${props.doneCount || 0}`, props.showDone, props.setShowDone),
++        h("details", { className: "hermes-kanban-view-options" },
++          h("summary", null, "Вид и фильтры"),
++          h("div", { className: "hermes-kanban-view-options-body" },
++            toggle("Все этапы, включая пустые", props.showAllColumns, props.setShowAllColumns),
++            toggle("Группировать по исполнителю", props.laneByProfile, props.setLaneByProfile),
++            toggle("Показывать архив", props.includeArchived, props.setIncludeArchived),
++            h(Label, null, "Метка задачи"),
++            h(Select, Object.assign({ value: props.tenantFilter, "aria-label": "Метка задачи" }, selectChangeHandler(props.setTenantFilter)),
++              h(SelectOption, { value: "" }, "Все метки"),
++              tenants.map(function (tn) { return h(SelectOption, { key: tn, value: tn }, tn); })),
++            h(Button, { onClick: function () {
++              props.setSearch(""); props.setTenantFilter(""); props.setAssigneeFilter(""); props.setIncludeArchived(false);
++            }, size: "sm" }, "Сбросить фильтры"),
++            h(Button, { onClick: props.onNudgeDispatch, size: "sm",
++              title: "Проверить готовые задачи сейчас, сохраняя ограничения квот и зависимостей" }, "Проверить очередь сейчас")))),
+     );
+   }
+ 
+@@ -3207,12 +3662,13 @@
+             ? lanes.map(function (lane) {
+                 return h("div", { key: lane.assignee, className: "hermes-kanban-lane" },
+                   h("div", { className: "hermes-kanban-lane-head" },
+-                    h("span", { className: "hermes-kanban-lane-name" }, lane.assignee),
++                    h("span", { className: "hermes-kanban-lane-name" }, operatorRoleLabel(lane.assignee)),
+                     h("span", { className: "hermes-kanban-lane-count" }, lane.tasks.length),
+                   ),
+                   lane.tasks.map(function (tk) {
+                     return h(TaskCard, {
+                       key: tk.id, task: tk,
++                      allTasks: props.allTasks,
+                       selected: props.selectedIds.has(tk.id),
+                       failed: props.failedIds && props.failedIds.has(tk.id),
+                       draggingTaskId: props.draggingTaskId,
+@@ -3227,6 +3683,7 @@
+             : props.column.tasks.map(function (tk) {
+                 return h(TaskCard, {
+                   key: tk.id, task: tk,
++                      allTasks: props.allTasks,
+                   selected: props.selectedIds.has(tk.id),
+                   failed: props.failedIds && props.failedIds.has(tk.id),
+                   draggingTaskId: props.draggingTaskId,
+@@ -3319,6 +3776,7 @@
+ 
+     const progress = t.progress;
+     const needsAssignee = t.status === "ready" && !t.assignee;
++    const state = operatorStatus(t, Object.assign({}, t._operatorContext || {}, { allTasks: props.allTasks || [], teamTask: t._team }));
+ 
+     return h("div", {
+       ref: cardRef,
+@@ -3396,12 +3854,18 @@
+                 }, tx(i18n, "needsAssignee", "Needs assignee"))
+               : null,
+           ),
+-          h("div", { className: "hermes-kanban-card-title" },
+-            t.title || tx(i18n, "untitled", "(untitled)")),
++          h("div", { className: "hermes-kanban-card-title", title: t.title || "" },
++            compactTaskTitle(t.title || tx(i18n, "untitled", "(untitled)"))),
++          t.status === "blocked" || t.status === "ready" || t.status === "running"
++            ? h("div", { className: "hermes-kanban-card-state hermes-kanban-card-state--" + state.tone,
++                title: state.reason + " " + state.action },
++                h("strong", null, state.title),
++                t.status === "blocked" ? h("span", null, state.reason) : null)
++            : null,
+           h("div", { className: "hermes-kanban-card-row hermes-kanban-card-meta" },
+             t.assignee
+               ? h("span", { className: "hermes-kanban-assignee",
+-                            title: uiText(`Assigned to Hermes profile @${t.assignee}`, `Назначено профилю Hermes @${t.assignee}`) }, "@", t.assignee)
++                            title: uiText(`Assigned to Hermes profile @${t.assignee}`, `Назначено профилю Hermes @${t.assignee}`) }, operatorRoleLabel(t.assignee))
+               : h("span", { className: "hermes-kanban-unassigned",
+                             title: needsAssignee
+                               ? tx(i18n, "needsAssigneeHint", "Dependencies are satisfied, but the dispatcher skips this task until you assign a profile.")
+@@ -3955,7 +4419,6 @@
+         onClick: function (e) { e.stopPropagation(); },
+       },
+         h("div", { className: "hermes-kanban-drawer-head" },
+-          h("span", { className: "text-xs text-muted-foreground" }, props.taskId),
+           h("button", {
+             type: "button",
+             onClick: props.onClose,
+@@ -3968,6 +4431,7 @@
+         err ? h("div", { className: "p-4 text-sm text-destructive" }, err) :
+         data ? h(TaskDetail, {
+           data, editing, setEditing,
++          teamTask: props.teamTask,
+           renderMarkdown: props.renderMarkdown,
+           allTasks: props.allTasks,
+           assignees: props.assignees || [],
+@@ -3999,9 +4463,7 @@
+             title: tx(t, "commentHintTitle",
+               "Comments are the channel for talking to a task's worker. They land on the thread immediately — no need to block the task first. A running worker picks the thread up on its next kanban_show() or respawn; blocking is only for when you want the worker to STOP and wait for your input."),
+           },
+-            "ⓘ ",
+-            tx(t, "commentHint",
+-              "Comments reach the worker on its next run or kanban_show() — no need to block the task first."),
++            "Комментарий будет доступен исполнителю при следующем обращении к задаче.",
+           ),
+           h("div", { className: "hermes-kanban-drawer-comment-row" },
+             h(Input, {
+@@ -4144,13 +4606,80 @@
+   }
+ 
+   function TaskDetail(props) {
+-    const { t: i18n, localizedTimeAgo } = useI18n();
++    const { t: i18n, localizedTimeAgo, uiText } = useI18n();
+     const t = props.data.task;
+-    const comments = props.data.comments || [];
++    const allComments = props.data.comments || [];
++    const isServiceComment = function (comment) {
++      return comment.author === "team-controller" && /^(?:Назначение по доступному лимиту:|Ожидание ресурса подписки:)/.test(comment.body || "");
++    };
++    const comments = allComments.filter(function (comment) { return !isServiceComment(comment); });
++    const serviceComments = allComments.filter(isServiceComment);
+     const events = props.data.events || [];
+     const attachments = props.data.attachments || [];
+     const links = props.data.links || { parents: [], children: [] };
+-    const childResults = props.data.child_results || [];
++    const childResults = (props.data.child_results || []).filter(function (child) { return child.result || child.latest_summary; });
++    const operatorContext = {
++      comments: comments,
++      events: events,
++      runs: props.data.runs || [],
++      links: links,
++      allTasks: props.allTasks || [],
++      diagnostics: t.diagnostics || props.data.diagnostics || [],
++      teamTask: props.teamTask || null,
++    };
++    const operatorState = typeof operatorStatus === "function"
++      ? operatorStatus(t, operatorContext)
++      : null;
++    const compactTitle = typeof compactTaskTitle === "function"
++      ? compactTaskTitle(t.title || "")
++      : (t.title || tx(i18n, "untitled", "(untitled)"));
++    const drawerText = function (en, ru) { return uiText ? uiText(en, ru) : en; };
++    const assigneeLabel = t.assignee
++      ? (typeof operatorRoleLabel === "function" ? operatorRoleLabel(t.assignee) : t.assignee)
++      : drawerText("Unassigned", "Не назначен");
++
++    function plainPreview(source, limit) {
++      const plain = String(source || "")
++        .replace(/```[\s\S]*?```/g, " фрагмент кода ")
++        .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
++        .replace(/[`*_>#~|]/g, " ")
++        .replace(/\s+/g, " ")
++        .trim();
++      if (plain.length <= limit) return plain;
++      return plain.slice(0, Math.max(0, limit - 1)).trimEnd() + "…";
++    }
++
++    function reportBlock(label, source, key) {
++      if (!source) return null;
++      if (String(source).length <= 700) {
++        return h(MarkdownBlock, { source: source, enabled: props.renderMarkdown });
++      }
++      return h("div", { key: key, className: "hermes-kanban-long-report" },
++        h("p", { className: "hermes-kanban-long-report__preview" }, plainPreview(source, 220)),
++        disclosure(label,
++          h(MarkdownBlock, { source: source, enabled: props.renderMarkdown }),
++        ),
++      );
++    }
++
++    function renderComment(c) {
++      return h("div", { key: c.id, className: "hermes-kanban-comment" },
++        h("div", { className: "hermes-kanban-comment-head" },
++          h("span", { className: "hermes-kanban-comment-author" }, c.author || "anon"),
++          h("span", { className: "hermes-kanban-comment-ago" }, localizedTimeAgo(c.created_at)),
++        ),
++        reportBlock(drawerText("Full comment", "Полный комментарий"), c.body, c.id),
++      );
++    }
++
++    function disclosure(label, content, className) {
++      return h("details", {
++        className: cn("hermes-kanban-disclosure", className || ""),
++      },
++        h("summary", { className: "hermes-kanban-detail-heading" }, label),
++        content,
++      );
++    }
+ 
+     return h("div", { className: "hermes-kanban-drawer-body" },
+       h("div", { className: "hermes-kanban-drawer-title" },
+@@ -4165,63 +4694,30 @@
+             })
+           : h("span", {
+               className: "hermes-kanban-drawer-title-text",
+-              title: tx(i18n, "clickToEdit", "Click to edit"),
++              title: `${t.title || ""}\n${tx(i18n, "clickToEdit", "Click to edit")}`,
+               onClick: function () { props.setEditing(true); },
+-            }, t.title || tx(i18n, "untitled", "(untitled)")),
++            }, compactTitle),
+       ),
+-      h("div", { className: "hermes-kanban-drawer-meta" },
+-        h(MetaRow, { label: tx(i18n, "status", "Status"), value: getColumnLabel(i18n, t.status) }),
+-        h(AssigneeEditor, { task: t, onPatch: props.onPatch }),
+-        h(PriorityEditor, { task: t, onPatch: props.onPatch }),
+-        h(ModelEditor, { task: t, onPatch: props.onPatch }),
+-        t.tenant ? h(MetaRow, { label: tx(i18n, "tenant", "Tenant"), value: t.tenant }) : null,
+-        h(MetaRow, {
+-          label: tx(i18n, "workspace", "Workspace"),
+-          value: `${t.workspace_kind}${t.workspace_path ? ": " + t.workspace_path : ""}`,
+-        }),
+-        (t.skills && t.skills.length > 0) ? h(MetaRow, {
+-          label: tx(i18n, "skills", "Skills"),
+-          value: t.skills.join(", "),
+-        }) : null,
+-        t.goal_mode ? h(MetaRow, {
+-          label: tx(i18n, "goalMode", "Goal mode"),
+-          value: t.goal_max_turns
+-            ? `on (max ${t.goal_max_turns} turns)`
+-            : "on",
+-        }) : null,
+-        t.created_by ? h(MetaRow, { label: tx(i18n, "createdBy", "Created by"), value: t.created_by }) : null,
++      h("div", { className: "hermes-kanban-detail-assignee" },
++        h("span", { className: "hermes-kanban-detail-assignee__label" }, drawerText("Assignee", "Исполнитель")),
++        h("span", { className: "hermes-kanban-detail-assignee__value" }, assigneeLabel),
++        props.teamTask && props.teamTask.request_id ? h("a", {
++          href: "/engineering-team?request=" + encodeURIComponent(props.teamTask.request_id),
++          className: "hermes-kanban-request-link",
++        }, "Открыть запрос команды") : null,
+       ),
+-      h(StatusActions, {
+-        task: t,
+-        onPatch: props.onPatch,
+-        onSpecify: props.onSpecify,
+-        onDecompose: props.onDecompose,
+-      }),
+-      h(DiagnosticsSection, {
+-        task: t,
+-        boardSlug: props.boardSlug,
+-        assignees: props.assignees,
+-        diagnostics: t.diagnostics || [],
+-        onRefresh: props.onRefresh,
+-      }),
+-      h(HomeSubsSection, {
+-        homeChannels: props.homeChannels || [],
+-        homeBusy: props.homeBusy || {},
+-        onToggle: props.onToggleHomeSub,
+-      }),
+-      h(BodyEditor, {
+-        task: t,
+-        renderMarkdown: props.renderMarkdown,
+-        onPatch: props.onPatch,
+-      }),
+-      h(DependencyEditor, {
+-        task: t,
+-        links, allTasks: props.allTasks,
+-        onAddParent: props.onAddParent,
+-        onRemoveParent: props.onRemoveParent,
+-        onAddChild: props.onAddChild,
+-        onRemoveChild: props.onRemoveChild,
+-      }),
++      operatorState ? h("section", {
++        className: cn("hermes-kanban-operator-status", "hermes-kanban-operator-status--" + (operatorState.tone || "neutral")),
++        "aria-label": drawerText("Current status", "Текущий статус"),
++      },
++        h("h3", { className: "hermes-kanban-operator-status__title" }, operatorState.title),
++        operatorState.reason ? h("p", { className: "hermes-kanban-operator-status__reason" }, operatorState.reason) : null,
++        operatorState.action ? h("p", { className: "hermes-kanban-operator-status__action" }, operatorState.action) : null,
++        operatorState.href ? h("a", {
++          className: "hermes-kanban-operator-status__link",
++          href: operatorState.href,
++        }, operatorState.linkLabel || drawerText("Open request", "Открыть запрос")) : null,
++      ) : null,
+       (function () {
+         var finalResult = t.result || t.latest_summary || null;
+         var isDone = t.status === "done";
+@@ -4232,7 +4728,7 @@
+             : tx(i18n, "finalResult", "Final Result (run summary)");
+           return h("div", { className: "hermes-kanban-section" },
+             h("div", { className: "hermes-kanban-section-head" }, label),
+-            h(MarkdownBlock, { source: finalResult, enabled: props.renderMarkdown }),
++            reportBlock(drawerText("Full report", "Полный отчёт"), finalResult, "task-result"),
+           );
+         }
+         if (isDone && isParent) {
+@@ -4255,7 +4751,7 @@
+         }
+         return null;
+       })(),
+-      childResults.length > 0 ? h("div", { className: "hermes-kanban-section" },
++      childResults.length > 0 ? disclosure(`Результаты связанных задач (${childResults.length})`, h("div", { className: "hermes-kanban-section" },
+         h("div", { className: "hermes-kanban-section-head" },
+           `${tx(i18n, "childResults", "Child Results")} (${childResults.length})`),
+         childResults.map(function (child) {
+@@ -4263,8 +4759,8 @@
+           return h("div", { key: child.id, className: "hermes-kanban-comment" },
+             h("div", { className: "hermes-kanban-comment-head" },
+               h("span", { className: "hermes-kanban-comment-author" },
+-                `${child.id} · ${child.title || tx(i18n, "untitled", "(untitled)")}`),
+-              h(Badge, { variant: "outline" }, child.status),
++                compactTaskTitle(child.title || tx(i18n, "untitled", "(untitled)"))),
++              h(Badge, { variant: "outline" }, getColumnLabel(i18n, child.status)),
+               h("button", {
+                 type: "button",
+                 className: "hermes-kanban-diag-action-btn",
+@@ -4272,12 +4768,12 @@
+               }, tx(i18n, "open", "Open")),
+             ),
+             childResult
+-              ? h(MarkdownBlock, { source: childResult, enabled: props.renderMarkdown })
++              ? reportBlock(drawerText("Full report", "Полный отчёт"), childResult, child.id + "-result")
+               : h("div", { className: "text-xs text-muted-foreground" },
+                   tx(i18n, "noChildResult", "No result recorded yet.")),
+           );
+         }),
+-      ) : null,
++      )) : null,
+       h(AttachmentsSection, {
+         attachments: attachments,
+         boardSlug: props.boardSlug,
+@@ -4294,64 +4790,120 @@
+         comments.length === 0
+           ? h("div", { className: "text-xs text-muted-foreground" },
+               tx(i18n, "noComments", "— no comments —"))
+-          : comments.map(function (c) {
+-              return h("div", { key: c.id, className: "hermes-kanban-comment" },
+-                h("div", { className: "hermes-kanban-comment-head" },
+-                  h("span", { className: "hermes-kanban-comment-author" }, c.author || "anon"),
+-                  h("span", { className: "hermes-kanban-comment-ago" },
+-                    localizedTimeAgo(c.created_at)),
+-                ),
+-                h(MarkdownBlock, { source: c.body, enabled: props.renderMarkdown }),
+-              );
++          : comments.slice(-3).map(renderComment),
++      ),
++      comments.length > 3 ? disclosure(
++        drawerText(`Older comments (${comments.length - 3})`, `Предыдущие комментарии (${comments.length - 3})`),
++        comments.slice(0, -3).map(renderComment),
++      ) : null,
++      disclosure(drawerText("Technical details", "Технические подробности"),
++        h(React.Fragment, null,
++          disclosure(drawerText("Task details", "Данные задачи"),
++            h("div", { className: "hermes-kanban-drawer-meta" },
++              h(MetaRow, { label: drawerText("Task ID", "ID задачи"), value: t.id }),
++              h(MetaRow, { label: tx(i18n, "status", "Status"), value: getColumnLabel(i18n, t.status) }),
++              h(AssigneeEditor, { task: t, onPatch: props.onPatch }),
++              h(PriorityEditor, { task: t, onPatch: props.onPatch }),
++              h(ModelEditor, { task: t, onPatch: props.onPatch }),
++              t.tenant ? h(MetaRow, { label: tx(i18n, "tenant", "Tenant"), value: t.tenant }) : null,
++              h(MetaRow, {
++                label: tx(i18n, "workspace", "Workspace"),
++                value: `${t.workspace_kind}${t.workspace_path ? ": " + t.workspace_path : ""}`,
++              }),
++              (t.skills && t.skills.length > 0) ? h(MetaRow, {
++                label: tx(i18n, "skills", "Skills"),
++                value: t.skills.join(", "),
++              }) : null,
++              t.goal_mode ? h(MetaRow, {
++                label: tx(i18n, "goalMode", "Goal mode"),
++                value: t.goal_max_turns ? `on (max ${t.goal_max_turns} turns)` : "on",
++              }) : null,
++              t.created_by ? h(MetaRow, { label: tx(i18n, "createdBy", "Created by"), value: t.created_by }) : null,
++            ),
++          ),
++          disclosure(drawerText("Task management", "Управление задачей"),
++            h(StatusActions, {
++              task: t,
++              onPatch: props.onPatch,
++              onSpecify: props.onSpecify,
++              onDecompose: props.onDecompose,
+             }),
++          ),
++          disclosure(drawerText("Agent instructions", "Инструкция агенту"),
++            h(BodyEditor, {
++              task: t,
++              renderMarkdown: props.renderMarkdown,
++              onPatch: props.onPatch,
++            }),
++          ),
++          disclosure(drawerText("Links and dependencies", "Связи и зависимости"),
++            h(DependencyEditor, {
++              task: t,
++              links: links,
++              allTasks: props.allTasks,
++              onAddParent: props.onAddParent,
++              onRemoveParent: props.onRemoveParent,
++              onAddChild: props.onAddChild,
++              onRemoveChild: props.onRemoveChild,
++            }),
++          ),
++          (t.diagnostics || []).length > 0 ? disclosure(drawerText("Diagnostics", "Диагностика"),
++            h(DiagnosticsSection, {
++              task: t,
++              boardSlug: props.boardSlug,
++              assignees: props.assignees,
++              diagnostics: t.diagnostics || [],
++              onRefresh: props.onRefresh,
++            }),
++          ) : null,
++          (props.homeChannels || []).length > 0 ? disclosure(drawerText("Notifications", "Уведомления"),
++            h(HomeSubsSection, {
++              homeChannels: props.homeChannels || [],
++              homeBusy: props.homeBusy || {},
++              onToggle: props.onToggleHomeSub,
++            }),
++          ) : null,
++          serviceComments.length > 0 ? disclosure(`Служебные сообщения (${serviceComments.length})`,
++            serviceComments.map(renderComment),
++          ) : null,
++          disclosure(`${drawerText("Events", "События")} (${events.length})`,
++            h("div", { className: "hermes-kanban-section" },
++              events.slice().reverse().slice(0, 20).map(function (e) {
++                const isDiag = isDiagnosticEvent(e.kind);
++                const phantoms = isDiag ? phantomIdsFromEvent(e) : [];
++                return h("div", {
++                  key: e.id,
++                  className: cn("hermes-kanban-event", isDiag ? "hermes-kanban-event--hallucination" : ""),
++                },
++                  isDiag
++                    ? h("div", { className: "hermes-kanban-event-header" },
++                        h("span", { className: "hermes-kanban-event-warning-icon" }, "⚠"),
++                        h("span", { className: "hermes-kanban-event-warning-label" }, getDiagnosticEventLabel(i18n, e.kind) || e.kind),
++                        h("span", { className: "hermes-kanban-event-ago" }, localizedTimeAgo(e.created_at)),
++                      )
++                    : h("div", { className: "hermes-kanban-event-header-plain" },
++                        h("span", { className: "hermes-kanban-event-kind" }, e.kind),
++                        h("span", { className: "hermes-kanban-event-ago" }, localizedTimeAgo(e.created_at)),
++                      ),
++                  isDiag && phantoms.length > 0 ? h("div", { className: "hermes-kanban-event-phantom-row" },
++                    h("span", { className: "hermes-kanban-event-phantom-label" }, tx(i18n, "phantomIds", "Phantom ids:")),
++                    phantoms.map(function (pid) {
++                      return h("code", { key: pid, className: "hermes-kanban-event-phantom-chip" }, pid);
++                    }),
++                  ) : null,
++                  e.payload && !isDiag ? h("code", { className: "hermes-kanban-event-payload" }, JSON.stringify(e.payload)) : null,
++                );
++              }),
++            ),
++          ),
++          disclosure(drawerText("Technical details", "Логи и запуски"),
++            h(React.Fragment, null,
++              h(WorkerLogSection, { taskId: t.id, boardSlug: props.boardSlug }),
++              h(RunHistorySection, { runs: props.data.runs || [] }),
++            ),
++          ),
++        ),
+       ),
+-      h("div", { className: "hermes-kanban-section" },
+-        h("div", { className: "hermes-kanban-section-head" },
+-          `${tx(i18n, "events", "Events")} (${events.length})`),
+-        events.slice().reverse().slice(0, 20).map(function (e) {
+-          const isDiag = isDiagnosticEvent(e.kind);
+-          const phantoms = isDiag ? phantomIdsFromEvent(e) : [];
+-          return h("div", {
+-            key: e.id,
+-            className: cn(
+-              "hermes-kanban-event",
+-              isDiag ? "hermes-kanban-event--hallucination" : "",
+-            ),
+-          },
+-            isDiag
+-              ? h("div", { className: "hermes-kanban-event-header" },
+-                  h("span", { className: "hermes-kanban-event-warning-icon" }, "⚠"),
+-                  h("span", { className: "hermes-kanban-event-warning-label" },
+-                    getDiagnosticEventLabel(i18n, e.kind) || e.kind),
+-                  h("span", { className: "hermes-kanban-event-ago" },
+-                    localizedTimeAgo(e.created_at)),
+-                )
+-              : h("div", { className: "hermes-kanban-event-header-plain" },
+-                  h("span", { className: "hermes-kanban-event-kind" }, e.kind),
+-                  h("span", { className: "hermes-kanban-event-ago" },
+-                    localizedTimeAgo(e.created_at)),
+-                ),
+-            isDiag && phantoms.length > 0
+-              ? h("div", { className: "hermes-kanban-event-phantom-row" },
+-                  h("span", { className: "hermes-kanban-event-phantom-label" },
+-                    tx(i18n, "phantomIds", "Phantom ids:")),
+-                  phantoms.map(function (pid) {
+-                    return h("code", {
+-                      key: pid,
+-                      className: "hermes-kanban-event-phantom-chip",
+-                    }, pid);
+-                  }),
+-                )
+-              : null,
+-            e.payload && !isDiag
+-              ? h("code", { className: "hermes-kanban-event-payload" },
+-                  JSON.stringify(e.payload))
+-              : null,
+-          );
+-        }),
+-      ),
+-      h(WorkerLogSection, { taskId: t.id, boardSlug: props.boardSlug }),
+-      h(RunHistorySection, { runs: props.data.runs || [] }),
+     );
+   }
+ 
+--- a/plugins/kanban/dashboard/dist/style.css
++++ b/plugins/kanban/dashboard/dist/style.css
+@@ -1591,3 +1591,220 @@
+ .hermes-kanban-trash-label {
+   font-weight: 500;
+ }
++
++/* ---- Operator readability pass -------------------------------------- */
++/* Dashboard themes can apply display fonts, tracking and forced uppercase
++   to every control. Keep the Kanban UI calm and legible regardless of the
++   selected dashboard theme, while leaving code/log payloads monospaced. */
++.hermes-kanban,
++.hermes-kanban :where(button, input, select, textarea, label, p, span, div,
++  h1, h2, h3, h4, summary, a, li, dt, dd) {
++  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
++    "Noto Sans", sans-serif !important;
++  letter-spacing: normal !important;
++  text-transform: none !important;
++}
++
++.hermes-kanban :where(button, input, select, textarea) {
++  font-size: 0.875rem;
++  line-height: 1.4;
++}
++
++.hermes-kanban :where(p, li, label, summary) {
++  font-size: 0.875rem;
++  line-height: 1.5;
++}
++
++.hermes-kanban :where(code, pre, kbd, samp),
++.hermes-kanban :where(.hermes-kanban-card-id, .hermes-kanban-lane-name,
++  .hermes-kanban-progress, .hermes-kanban-event-payload,
++  .hermes-kanban-run-id, .hermes-kanban-meta-value code) {
++  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
++    "Liberation Mono", monospace !important;
++  letter-spacing: normal !important;
++  text-transform: none !important;
++}
++
++.hermes-kanban-column-label,
++.hermes-kanban-lane-head,
++.hermes-kanban-card-title,
++.hermes-kanban-card-meta,
++.hermes-kanban-drawer-head,
++.hermes-kanban-drawer-title,
++.hermes-kanban-diag-title {
++  letter-spacing: normal !important;
++  text-transform: none !important;
++}
++
++.hermes-kanban-column-label { font-size: 0.9rem; }
++.hermes-kanban-lane-head { font-size: 0.8rem; }
++.hermes-kanban-lane-name { font-size: 0.8rem; }
++.hermes-kanban-card-title { font-size: 0.9rem; line-height: 1.4; }
++.hermes-kanban-card-meta { font-size: 0.78rem; line-height: 1.4; }
++.hermes-kanban-card-id { font-size: 0.72rem; }
++.hermes-kanban-drawer-head { font-size: 0.8rem; }
++.hermes-kanban-drawer-title { font-size: 1.125rem; line-height: 1.35; }
++.hermes-kanban-drawer-body { gap: 0.7rem; }
++
++/* Compact, readable operator summary at the start of a task drawer. */
++.hermes-kanban-operator-status {
++  --operator-accent: var(--color-muted-foreground, #8b95a5);
++  display: grid;
++  gap: 0.3rem;
++  padding: 0.8rem 0.9rem;
++  border: 1px solid color-mix(in srgb, var(--operator-accent) 38%, var(--color-border));
++  border-left: 4px solid var(--operator-accent);
++  border-radius: var(--radius, 0.5rem);
++  background: color-mix(in srgb, var(--operator-accent) 7%, var(--color-card));
++  color: var(--color-foreground);
++  font-size: 0.9rem;
++  line-height: 1.5;
++  overflow-wrap: anywhere;
++}
++.hermes-kanban-operator-status--warning { --operator-accent: #d29527; }
++.hermes-kanban-operator-status--error { --operator-accent: #d34b4b; }
++.hermes-kanban-operator-status--info { --operator-accent: #4487c5; }
++.hermes-kanban-operator-status--success { --operator-accent: #328b60; }
++.hermes-kanban-operator-status__title {
++  font-size: 0.98rem;
++  line-height: 1.35;
++  font-weight: 700;
++  color: var(--color-foreground);
++}
++.hermes-kanban-operator-status__reason,
++.hermes-kanban-operator-status__action {
++  font-size: 0.875rem;
++  line-height: 1.5;
++  color: var(--color-foreground);
++  overflow-wrap: anywhere;
++}
++.hermes-kanban-operator-status__action { font-weight: 600; }
++
++.hermes-kanban-card-state {
++  display: block;
++  margin-top: 0.2rem;
++  padding: 0.35rem 0.5rem;
++  border-left: 3px solid var(--color-muted-foreground, #8b95a5);
++  border-radius: 0.25rem;
++  background: color-mix(in srgb, var(--color-foreground) 5%, transparent);
++  color: var(--color-foreground);
++  font-size: 0.78rem;
++  line-height: 1.4;
++  overflow-wrap: anywhere;
++}
++.hermes-kanban-card-state--warning { border-left-color: #d29527; }
++.hermes-kanban-card-state--error { border-left-color: #d34b4b; }
++.hermes-kanban-card-state--info { border-left-color: #4487c5; }
++.hermes-kanban-card-state--success { border-left-color: #328b60; }
++
++/* Long instructions, raw events and worker output stay available, but do
++   not dominate the initial view of a task. */
++.hermes-kanban-disclosure {
++  min-width: 0;
++  border: 1px solid var(--color-border);
++  border-radius: var(--radius, 0.5rem);
++  background: color-mix(in srgb, var(--color-foreground) 2.5%, var(--color-card));
++}
++.hermes-kanban-disclosure > summary {
++  display: flex;
++  align-items: center;
++  gap: 0.45rem;
++  min-height: 2.6rem;
++  padding: 0.55rem 0.75rem;
++  color: var(--color-foreground);
++  font-size: 0.875rem;
++  line-height: 1.4;
++  font-weight: 600;
++  cursor: pointer;
++  list-style-position: inside;
++}
++.hermes-kanban-disclosure > summary:hover {
++  background: color-mix(in srgb, var(--color-foreground) 4%, transparent);
++}
++.hermes-kanban-disclosure[open] > summary {
++  border-bottom: 1px solid var(--color-border);
++}
++.hermes-kanban-disclosure > :not(summary) {
++  margin: 0.65rem 0.75rem;
++}
++.hermes-kanban-detail-heading {
++  margin: 0;
++  padding: 0 0 0.35rem;
++  color: var(--color-muted-foreground);
++  font-size: 0.75rem;
++  line-height: 1.35;
++  font-weight: 700;
++}
++
++.hermes-kanban :where(.hermes-kanban-drawer-meta, .hermes-kanban-meta-row,
++  .hermes-kanban-diag-detail, .hermes-kanban-comment-body,
++  .hermes-kanban-md, .hermes-kanban-md p, .hermes-kanban-md li) {
++  font-size: 0.875rem;
++  line-height: 1.55;
++  overflow-wrap: anywhere;
++}
++.hermes-kanban-meta-label { flex: 0 0 6.5rem; }
++.hermes-kanban-meta-row { align-items: baseline; }
++.hermes-kanban :where(.hermes-kanban-md pre, .hermes-kanban-md-code,
++  .hermes-kanban-event-payload) {
++  max-width: 100%;
++  overflow-x: auto;
++  white-space: pre-wrap;
++  overflow-wrap: anywhere;
++  font-size: 0.8rem;
++  line-height: 1.5;
++}
++
++.hermes-kanban :where(button, a, input, select, textarea, summary):focus-visible {
++  outline: 2px solid var(--color-ring, #4c9ffe);
++  outline-offset: 2px;
++}
++
++@media (max-width: 640px) {
++  .hermes-kanban-drawer {
++    width: 100vw;
++    max-width: 100vw;
++  }
++  .hermes-kanban-drawer-body { padding-inline: 0.7rem; }
++  .hermes-kanban-operator-status { padding: 0.7rem; }
++  .hermes-kanban-meta-label { flex-basis: 5.25rem; }
++}
++
++/* Focus the default board on active work; secondary controls stay available. */
++.hermes-kanban-toolbar { display: grid; gap: 0.7rem; }
++.hermes-kanban-toolbar-main { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
++.hermes-kanban-toolbar-main input { flex: 1 1 210px; min-width: 160px; }
++.hermes-kanban-toolbar-main > select,
++.hermes-kanban-toolbar-main > button[role="combobox"] { flex: 0 1 210px; }
++.hermes-kanban-toolbar-secondary { display: flex; align-items: start; flex-wrap: wrap; gap: 1rem; }
++.hermes-kanban-view-toggle { display: flex; align-items: center; gap: 0.45rem; min-height: 2rem; cursor: pointer; }
++.hermes-kanban-view-options { flex: 1; }
++.hermes-kanban-view-options > summary { cursor: pointer; padding: 0.25rem 0; color: var(--color-muted-foreground); }
++.hermes-kanban-view-options-body { display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap; padding: 0.75rem; margin-top: 0.4rem; border: 1px solid var(--color-border); border-radius: var(--radius); }
++.hermes-kanban-view-hint { color: var(--color-muted-foreground); margin: 0; font-size: 0.8rem !important; line-height: 1.5; }
++.hermes-kanban-columns { padding-bottom: 0.75rem; }
++.hermes-kanban-column { flex: 0 0 310px; max-height: calc(100dvh - 260px); }
++.hermes-kanban-column-sub { font-size: 0.78rem; line-height: 1.4; }
++.hermes-kanban-card-content { padding: 0.8rem; }
++.hermes-kanban-card-state strong { display: block; margin-bottom: 0.15rem; font-size: 0.8rem; font-weight: 600; }
++.hermes-kanban-card-state > span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.78rem; }
++.hermes-kanban-card-title { overflow-wrap: anywhere; }
++.hermes-kanban-detail-assignee { display: flex; gap: 0.5rem; flex-wrap: wrap; font-size: 0.875rem; }
++.hermes-kanban-detail-assignee__label { color: var(--color-muted-foreground); }
++.hermes-kanban-detail-assignee__value { font-weight: 600; }
++.hermes-kanban-operator-status p,
++.hermes-kanban-operator-status h3 { margin: 0; }
++.hermes-kanban-operator-status__link { display: inline-block; width: fit-content; margin-top: 0.3rem; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
++.hermes-kanban-disclosure > summary::before { content: "▸"; flex: 0 0 auto; color: var(--color-muted-foreground); }
++.hermes-kanban-disclosure[open] > summary::before { content: "▾"; }
++.hermes-kanban-disclosure > summary::-webkit-details-marker { display: none; }
++.hermes-kanban-drawer { width: min(680px, 94vw); }
++.hermes-kanban-drawer-comment-foot { padding: 0.75rem 1rem; }
++.hermes-kanban-drawer-comment-foot .hermes-kanban-comment-hint { font-size: 0.78rem; line-height: 1.4; }
++@media (max-width: 640px) {
++  .hermes-kanban-column { flex-basis: min(310px, 84vw); }
++  .hermes-kanban-drawer { width: 100vw; max-width: 100vw; }
++  .hermes-kanban-toolbar-main > * { max-width: 100%; }
++}
++.hermes-kanban-request-link { margin-left: auto; color: var(--color-foreground); text-decoration: underline; text-underline-offset: 3px; }
++@media (max-width: 480px) { .hermes-kanban-request-link { margin-left: 0; flex-basis: 100%; } }

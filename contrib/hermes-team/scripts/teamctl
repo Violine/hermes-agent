@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+export HERMES_HOME=/home/alex/.hermes
+export HERMES_SOURCE_ROOT="$HERMES_HOME/hermes-agent"
+case "${LC_ALL:-${LC_CTYPE:-${LANG:-C}}}" in
+  C|POSIX) export LANG=C.UTF-8 LC_ALL=C.UTF-8 ;;
+esac
+export PATH="$HERMES_SOURCE_ROOT/venv/bin:/home/alex/.hermes/node/bin:/home/alex/.local/bin:/usr/local/bin:/usr/bin:/bin"
+if [ -x "$HERMES_HOME/toolchains/jdk-21/bin/java" ]; then
+  export JAVA_HOME="$HERMES_HOME/toolchains/jdk-21"
+  export PATH="$JAVA_HOME/bin:$PATH"
+fi
+cd "$HERMES_HOME/team/runtime"
+if [ "${1:-}" = config ]; then
+  shift
+  exec "$HERMES_SOURCE_ROOT/venv/bin/python" -m team_engine.configure "$@"
+fi
+exec "$HERMES_SOURCE_ROOT/venv/bin/python" -m team_engine.controller "$@"

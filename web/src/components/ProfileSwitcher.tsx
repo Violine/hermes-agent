@@ -23,9 +23,11 @@ export function ProfileSwitcher({ collapsed }: ProfileSwitcherProps) {
     () =>
       (t.app.currentProfileOption ?? "this dashboard ({name})").replace(
         "{name}",
-        currentProfile || "default",
+        currentProfile === "default"
+          ? t.profiles.defaultBadge
+          : currentProfile || t.profiles.defaultBadge,
       ),
-    [currentProfile, t.app.currentProfileOption],
+    [currentProfile, t.app.currentProfileOption, t.profiles.defaultBadge],
   );
 
   if (profiles.length < 2) return null;

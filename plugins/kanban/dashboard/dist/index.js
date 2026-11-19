@@ -45,7 +45,133 @@
   // may not expose it yet; fall back to a shim so the bundle still renders
   // English against an older host SDK. English fallback strings live
   // alongside each call site (passed as the third arg of tx()).
-  const useI18n = SDK.useI18n || function () { return { t: { kanban: null }, locale: "en" }; };
+  const hostUseI18n = SDK.useI18n || function () { return { t: { kanban: null }, locale: "en" }; };
+  // The dashboard's plugin SDK exposes the active app locale. Keep the
+  // fallback strings below tied to that locale so newer Kanban copy remains
+  // readable even when the host's bundled dictionary predates this plugin.
+  const useI18n = function () {
+    const state = hostUseI18n();
+    const locale = state.locale || "en";
+    const localized = React.useMemo(() => ({
+      t: Object.assign({}, state.t, { __kanbanLocale: locale }),
+      uiText: (en, ru) => /^ru(?:[-_]|$)/i.test(locale) ? ru : en,
+      localizedTimeAgo: (value) => formatTimeAgo(value, locale),
+    }), [state.t, locale]);
+    return Object.assign({}, state, localized);
+  };
+
+  const RU_KANBAN = {
+    "blockedWaitingHelp": "Ожидает ответа, квоты или зависимостей. Причина — в карточке.",
+    "columnLabels.review": "Проверка",
+    "columnLabels.blocked": "Ожидание и остановки",
+    "columnHelp.blocked": "Причина указана в карточке. Откройте её, чтобы увидеть следующее действие.",
+    "columnHelp.review": "Реализация завершена — ожидает проверки.",
+    "confirmDoneMany": "Отметить {n} задач как выполненные? Захваты исполнителей будут освобождены, а зависимые дочерние задачи станут готовы.",
+    "confirmArchiveMany": "Архивировать {n} задач? Они исчезнут из стандартного вида доски.",
+    "confirmBlockedMany": "Заблокировать {n} задач? Захваты исполнителей будут освобождены.",
+    "selectedTasks": "{n} выбранных задач",
+    "thisTask": "эту задачу",
+    "confirmStatusTitle.triage": "Переместить задачу в сортировку?",
+    "confirmStatusTitle.todo": "Переместить задачу в список дел?",
+    "confirmStatusTitle.ready": "Переместить задачу в готовые?",
+    "confirmStatusTitle.blocked": "Заблокировать задачу?",
+    "confirmStatusTitle.done": "Завершить задачу?",
+    "confirmStatusTitle.archived": "Архивировать задачу?",
+    "confirmStatusLabel.triage": "Переместить",
+    "confirmStatusLabel.todo": "Переместить",
+    "confirmStatusLabel.ready": "Переместить",
+    "confirmStatusLabel.blocked": "Заблокировать",
+    "confirmStatusLabel.done": "Завершить",
+    "confirmStatusLabel.archived": "Архивировать",
+    "bulkConfirmTitle": "Применить массовое изменение",
+    "trash.label": "Корзина",
+    "trash.title": "Перетащите карточку сюда, чтобы удалить её безвозвратно",
+    "trash.confirmTitle": "Удалить задачу?",
+    "trash.confirm": "Удалить задачу безвозвратно? Это действие нельзя отменить.",
+    "trash.dropHint": "Перетащите сюда для удаления",
+    "trash.confirmManyTitle": "Удалить {n} задач?",
+    "trash.confirmMany": "Удалить выбранные задачи безвозвратно? Это действие нельзя отменить.",
+    "projectDirectory": "Каталог проекта",
+    "projectDirectoryHint": "(рекомендуется)",
+    "projectDirectoryPlaceholder": "например, ~/projects/my-app",
+    "projectDirectoryHelp": "Каталог проекта, в котором будут создаваться рабочие пространства задач.",
+    "projectDirectoryExplanation": "Можно задать позже в настройках доски.",
+    "projectDirectoryOverrideHint": "Путь можно переопределить для каждой задачи.",
+    "clearFilters": "Сбросить фильтры",
+    "needsAssignee": "Нужно назначить исполнителя",
+    "needsAssigneeHint": "Зависимости выполнены, но диспетчер пропустит задачу, пока вы не назначите профиль.",
+    "setPriority": "Задать приоритет",
+    "newTaskTitle": "Новая задача — {column}",
+    "taskTitleLabel": "Название",
+    "assigneeLabel": "Исполнитель",
+    "assigneeLabelHint": "(оставьте пустым — диспетчер выберет сам)",
+    "skillsLabel": "Навыки",
+    "skillsLabelHint": "(необязательно, через запятую)",
+    "workspaceScratch": "Временное — удаляется после завершения",
+    "workspaceScratchWarning": "Это рабочее пространство и оставшиеся в нём файлы будут удалены после завершения задачи.",
+    "workspaceWorktree": "Git worktree — сохраняется",
+    "workspaceDir": "Каталог — сохраняется",
+    "parentLabel": "Родительская задача",
+    "parentLabelHint": "(дочерняя останется заблокированной, пока родительская задача не будет завершена)",
+    "goalMode": "Режим цели",
+    "goalMaxTurns": "лимит ходов (по умолчанию 20)",
+    "confirmTitle": "Подтвердите изменение",
+    "common.confirm": "Подтвердить",
+    "common.delete": "Удалить",
+    "commentHintTitle": "Комментарии — это канал связи с исполнителем задачи",
+    "commentHint": "Комментарий появится в обсуждении задачи. Исполнитель увидит его в следующем ходе; останавливать задачу не нужно.",
+    "attachments": "Вложения",
+    "uploading": "Загрузка…",
+    "uploadFile": "Загрузить файл",
+    "noAttachments": "— вложений пока нет —",
+    "removeAttachment": "Удалить вложение",
+    "confirmRemoveAttachment": "Удалить это вложение?",
+    "finalResult": "Итоговый результат (сводка запуска)",
+    "doneParentNote": "Это карточка-оркестратор или родительская задача. Подробности работы смотрите в результатах дочерних задач.",
+    "doneNoResult": "Итоговый результат не сохранён. Посмотрите историю запусков, журналы или дочерние задачи.",
+    "childResults": "Результаты дочерних задач",
+    "noChildResult": "Результат пока не записан.",
+    "model": "Модель",
+    "modelProfileDefault": "модель профиля по умолчанию",
+    "clickToEditModel": "Нажмите, чтобы задать модель для следующего запуска этой задачи",
+    "modelFreeTextPlaceholder": "название модели (пусто — модель профиля по умолчанию)",
+    "modelLoading": "Загрузка моделей…",
+    "modelProfileDefaultOption": "(модель профиля по умолчанию)",
+    "loadSettingsFailed": "Не удалось загрузить настройки: ",
+    "settingsSaved": "Настройки сохранены.",
+    "saveFailed": "Не удалось сохранить: ",
+    "descriptionSaved": "Описание профиля {name} сохранено.",
+    "autoGenerateFailed": "Не удалось создать описание автоматически: ",
+    "reviewing": "Проверка",
+  };
+
+  function pluralRu(n, forms) {
+    const value = Math.abs(Number(n) || 0);
+    const mod10 = value % 10;
+    const mod100 = value % 100;
+    const index = mod10 === 1 && mod100 !== 11 ? 0
+      : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 1 : 2;
+    return `${n} ${forms[index]}`;
+  }
+
+  function formatTimeAgo(value, locale) {
+    if (!value) return "";
+    if (!/^ru(?:[-_]|$)/i.test(locale)) return timeAgo ? timeAgo(value) : "";
+    // Kanban API timestamps, like SDK.utils.timeAgo, are Unix seconds.
+    const timestamp = typeof value === "number" ? value * 1000 : new Date(value).getTime();
+    if (!Number.isFinite(timestamp)) return "";
+    const seconds = Math.round((timestamp - Date.now()) / 1000);
+    const units = [[60, "second"], [60, "minute"], [24, "hour"], [7, "day"], [4.345, "week"], [12, "month"], [Infinity, "year"]];
+    let amount = seconds;
+    let unit = "second";
+    for (const [limit, candidate] of units) {
+      if (Math.abs(amount) < limit) { unit = candidate; break; }
+      amount /= limit;
+    }
+    const rtf = new Intl.RelativeTimeFormat("ru", { numeric: "auto" });
+    const unitMap = { second: "second", minute: "minute", hour: "hour", day: "day", week: "week", month: "month", year: "year" };
+    return rtf.format(Math.round(amount), unitMap[unit]);
+  }
 
   // Resolve a translation by dotted path under the kanban namespace
   // (e.g. "columnLabels.triage"); fall back to the English string passed in.
@@ -60,6 +186,14 @@
       }
     }
     let str = (typeof node === "string") ? node : fallback;
+    // Some upstream locale catalogs contain English placeholders for keys
+    // added after that catalog was authored. Replace those with the local
+    // Russian fallback while preserving the host's English/default behavior.
+    if (t && /^ru(?:[-_]|$)/i.test(t.__kanbanLocale) && (typeof node !== "string" || node === fallback)) {
+      str = path === "selectedTasks" && vars
+        ? pluralRu(vars.n, ["выбранная задача", "выбранные задачи", "выбранных задач"])
+        : (RU_KANBAN[path] || str);
+    }
     if (vars) {
       for (const k in vars) {
         str = str.replace(new RegExp("\\{" + k + "\\}", "g"), vars[k]);
@@ -144,9 +278,14 @@
   };
 
   function getColumnLabel(t, status) {
+    if (status === "blocked" && t && /^ru(?:[-_]|$)/i.test(t.__kanbanLocale)) return "Ожидание и остановки";
     return tx(t, "columnLabels." + status, FALLBACK_COLUMN_LABEL[status] || status);
   }
   function getColumnHelp(t, status) {
+    if (status === "blocked") {
+      if (t && /^ru(?:[-_]|$)/i.test(t.__kanbanLocale)) return "Причина и следующее действие — в начале карточки.";
+      return tx(t, "blockedWaitingHelp", "Waiting for input, quota, or dependencies. Open the task for details.");
+    }
     return tx(t, "columnHelp." + status, FALLBACK_COLUMN_HELP[status] || "");
   }
   function getDestructiveConfirm(t, status, count) {
@@ -600,6 +739,438 @@
   // Root page
   // -------------------------------------------------------------------------
 
+  // BEGIN operator-status.js
+// Pure operator-facing summaries for the legacy Kanban UI.
+// This file is injected into the dashboard IIFE; keep it dependency-free.
+
+function compactTaskTitle(title) {
+  var value = String(title == null ? "" : title).trim();
+  // Request ids are useful in the details view, but add no meaning to every
+  // board card. Strip only a leading, well-formed request token.
+  value = value.replace(/^\s*\[req-[a-f0-9]{8,64}\]\s*/i, "");
+  value = value.replace(/^\s*(?:—|–|-|:|·)+\s*/, "");
+  return value.trim() || String(title == null ? "Без названия" : title).trim();
+}
+
+function operatorRoleLabel(assignee) {
+  var value = String(assignee == null ? "" : assignee).trim();
+  var key = value.toLowerCase();
+  var labels = {
+    "team-analyst": "Аналитик",
+    "team-planner": "Планировщик",
+    "team-skeptic": "Скептик",
+    "team-judge": "Судья плана",
+    "team-backend-developer": "Backend-разработчик",
+    "team-backend": "Backend-разработчик",
+    "team-frontend-developer": "Frontend-разработчик",
+    "team-frontend": "Frontend-разработчик",
+    "team-mobile-developer": "Мобильный разработчик",
+    "team-android-developer": "Мобильный разработчик",
+    "team-go-developer": "Go-разработчик",
+    "team-reviewer": "Ревьюер",
+    "team-qa-regression": "QA / регрессия",
+    "team-qa": "QA / регрессия",
+    "team-test-designer": "Проектировщик тестов",
+    "team-controller": "Оркестратор",
+  };
+  if (labels[key]) return labels[key];
+  if (/^team-/.test(value)) {
+    return value.slice(5).split(/[-_]+/).filter(Boolean).map(function (part) {
+      return part.charAt(0).toUpperCase() + part.slice(1);
+    }).join(" ");
+  }
+  return value || "Не назначен";
+}
+
+function operatorStatus(task, context) {
+  task = task || {};
+  context = context || {};
+  var team = context.teamTask || task._team || null;
+  var status = String(task.status || "").toLowerCase();
+  var result = {
+    title: statusLabel(status),
+    reason: "",
+    action: "",
+    tone: "neutral",
+  };
+
+  var isStopped = status === "blocked" || status === "waiting_tests";
+  var workflowStop = isStopped ? teamWorkflowStop(team) : null;
+  var owner = isStopped ? ownerInput(team, context) : null;
+  if (owner) {
+    result.title = "Нужен ваш ответ";
+    result.reason = owner.reason;
+    result.action = owner.action;
+    result.tone = "warning";
+    if (owner.href) result.href = owner.href;
+    if (owner.linkLabel) result.linkLabel = owner.linkLabel;
+    return result;
+  }
+  if (workflowStop) {
+    var runs = Array.isArray(context.runs) ? context.runs : [];
+    if (team.assignment_state === "pending" && !task.started_at && runs.length === 0) {
+      workflowStop.title = "Ожидает возобновления команды";
+      workflowStop.reason = "Командный процесс приостановлен. " + workflowStop.reason;
+      workflowStop.action = "Ответ от вас сейчас не запрошен. Откройте запрос, чтобы увидеть состояние команды.";
+    }
+    return workflowStop;
+  }
+
+  var testWait = team && team.test_wait || task.test_wait || null;
+  var testWaitStatus = String(team && team.status || "").toLowerCase();
+  var latestRun = latestOperatorRun(context);
+  // A new attempt or completed run supersedes a stale wait projection.
+  var latestIsBlocked = !latestRun || String(latestRun.status || "").toLowerCase() === "blocked";
+  if (isStopped && latestIsBlocked && (status === "waiting_tests" || testWaitStatus === "waiting_tests" || testWait || nativeTestWait(task, context))) {
+    result.title = "Ожидает проверку";
+    result.reason = "Проверка выполняется отдельным заданием. Бюджет агента и слот свободны.";
+    result.action = "Действие не требуется. Команда продолжит по результату проверки.";
+    result.tone = "info";
+    return result;
+  }
+
+  if (status === "blocked") {
+    var teamReason = currentQuotaReason(team, status);
+    var quota = quotaKind(teamReason) || quotaKind(currentFailure(task, context));
+    if (quota === "concurrency") {
+      result.title = "Ожидает свободный слот";
+      result.reason = "Ждёт свободного слота модели.";
+      result.action = "От вас ничего не требуется. Диспетчер продолжит, когда слот освободится.";
+      result.tone = "warning";
+      return result;
+    }
+    if (quota === "limit") {
+      result.title = "Ожидает ресурс модели";
+      result.reason = "Достигнут лимит доступного ресурса модели.";
+      result.action = "От вас ничего не требуется. Срок восстановления в данных не указан.";
+      result.tone = "warning";
+      return result;
+    }
+    var runs = Array.isArray(context.runs) ? context.runs : [];
+
+    var deps = unresolvedParents(task, context);
+    if (deps.length) {
+      result.title = "Ожидает предыдущий этап";
+      result.reason = "Ждёт завершения: " + deps.map(function (item) { return item.title; }).join(", ") + ".";
+      result.action = deps.some(function (item) { return item.status === "archived"; })
+        ? "Проверьте зависимость: архивная задача не выполнена; её нужно вернуть в работу или снять связь."
+        : "От вас ничего не требуется. Задача продолжится после выполнения зависимости.";
+      result.tone = "warning";
+      return result;
+    }
+
+    var failure = currentFailure(task, context);
+    if (failure) {
+      result.title = "Остановлена из-за ошибки";
+      result.reason = readableFailure(failure);
+      result.action = "Нужна проверка последнего запуска и устранение этой ошибки.";
+      result.tone = "error";
+      return result;
+    }
+
+    if (team && team.assignment_state === "pending" && String(team.status || "").toLowerCase() === status && !task.started_at && runs.length === 0) {
+      result.title = "Ожидает допуска к запуску";
+      var stageLabel = shortOperatorText(team.stage_label || team.stage || "не указан", 100);
+      result.reason = "Оркестратор ещё не запустил эту задачу. Текущий этап запроса: «" + stageLabel + "».";
+      result.action = "Откройте запрос, чтобы увидеть текущую работу команды.";
+      result.tone = "warning";
+      var requestId = team.request_id || team.requestId;
+      if (requestId) {
+        result.href = "/engineering-team?request=" + encodeURIComponent(requestId);
+        result.linkLabel = "Открыть запрос";
+      }
+      return result;
+    }
+
+    result.title = "Причина требует уточнения";
+    result.reason = "Причина остановки не записана в доступных данных.";
+    result.action = "Откройте историю событий и последний запуск задачи.";
+    result.tone = "warning";
+    return result;
+  }
+
+  if (status === "running") {
+    result.reason = "Исполнитель сейчас работает над задачей.";
+    result.action = "Ждите обновления результата.";
+    result.tone = "info";
+  } else if (status === "review") {
+    result.reason = "Реализация ожидает проверки.";
+    result.action = "Проверьте результат или дождитесь ревьюера.";
+    result.tone = "warning";
+  } else if (status === "done" || status === "complete" || status === "completed") {
+    result.reason = "Задача завершена.";
+    result.action = "Действие не требуется.";
+    result.tone = "success";
+  } else if (status === "ready" || status === "todo" || status === "triage" || status === "scheduled") {
+    result.reason = status === "ready" ? "Задача готова к запуску." : "Задача ещё не выполняется.";
+    result.action = status === "ready"
+      ? (task.assignee ? "Диспетчер запустит её, когда появится ресурс." : "Назначьте роль исполнителя, чтобы задачу можно было запустить.")
+      : "Проверьте требования и назначение, если запуск задерживается.";
+    result.tone = "warning";
+  } else {
+    result.reason = "Текущий статус: " + (status || "не указан") + ".";
+    result.action = "Откройте подробности задачи.";
+    result.tone = "neutral";
+  }
+  return result;
+}
+
+function latestOperatorRun(context) {
+  var runs = Array.isArray(context.runs) ? context.runs.slice() : [];
+  runs.sort(function (a, b) {
+    // Native run ids are monotonically increasing; dates can have equal seconds.
+    var ai = Number(a.id == null ? a.run_id : a.id);
+    var bi = Number(b.id == null ? b.run_id : b.id);
+    if (Number.isSafeInteger(ai) && ai > 0 && Number.isSafeInteger(bi) && bi > 0) return bi - ai;
+    return runTime(b) - runTime(a);
+  });
+  return runs[0] || null;
+}
+
+function nativeTestWait(task, context) {
+  if (String(task.status || "").toLowerCase() !== "blocked") return false;
+  var marker = /^Ожидает проверку (?:backend|checks):[0-9a-f]{64}$/;
+  var latest = latestOperatorRun(context);
+  if (latest && String(latest.status || "").toLowerCase() !== "blocked") return false;
+  // Only structured native reasons are considered, never task text or comments.
+  var reason = task.blocked_reason == null ? task.block_reason : task.blocked_reason;
+  if (reason != null) return marker.test(String(reason));
+  if (latest && latest.summary != null) return marker.test(String(latest.summary));
+  var events = Array.isArray(context.events) ? context.events.slice() : [];
+  events.sort(function (a, b) { return eventTime(b) - eventTime(a) || Number(b.id || 0) - Number(a.id || 0); });
+  var event = events[0];
+  if (!event || event.kind !== "blocked") return false;
+  if (latest && event.run_id != null && String(event.run_id) !== String(latest.id == null ? latest.run_id : latest.id)) return false;
+  if (latest && eventTime(event) < runTime(latest)) return false;
+  var payload = event.payload;
+  if (typeof payload === "string") {
+    try { payload = JSON.parse(payload); } catch (_) { return false; }
+  }
+  return !!(payload && typeof payload === "object" && marker.test(String(payload.reason || "")));
+}
+
+function teamWorkflowStop(team) {
+  if (!team || String(team.stage || "").toLowerCase() !== "blocked") return null;
+  var blocker = String(team.blocker || team.blocked_reason || "").trim();
+  if (!blocker) return null;
+  var requestId = team.request_id || team.requestId;
+  var result = {
+    title: "Процесс команды остановлен",
+    reason: "Контроллер приостановил выполнение запроса. Подробная причина доступна в запросе.",
+    action: "Техническая причина остановки требует проверки. Ответ от вас сейчас не запрошен.",
+    tone: "warning",
+  };
+  if (/^rework\s+limit\s+reached:\s*qa\s+check\b[\s\S]*?non-zero\s+exit_code\b/i.test(blocker)) {
+    result.title = "Не принят отчёт проверки";
+    result.reason = "Контроллер не принял результат QA. Автоматическое продолжение остановлено; требуется разбор отчёта.";
+    result.action = "Проверьте отчёт и причину отказа в карточке запроса. Ответ от вас сейчас не запрошен.";
+    result.tone = "error";
+  }
+  if (requestId) {
+    result.href = "/engineering-team?request=" + encodeURIComponent(requestId);
+    result.linkLabel = "Открыть запрос";
+  }
+  return result;
+}
+
+function statusLabel(status) {
+  var labels = {
+    blocked: "Остановлена",
+    waiting_tests: "Ожидает проверку",
+    running: "В работе",
+    review: "На проверке",
+    done: "Готово",
+    complete: "Готово",
+    completed: "Готово",
+    ready: "Готова к запуску",
+    todo: "В очереди",
+    triage: "Нужна сортировка",
+    scheduled: "Запланирована",
+  };
+  return labels[status] || "Статус задачи";
+}
+
+function quotaKind(value) {
+  var text = String(value || "").toLowerCase();
+  if (!text) return "";
+  if (/max[_ -]?concurrent|reached\s+max\s+concurrent|concurrent\s+(?:limit|slot)|слот(?:а|ов)?\s+занят|максимум\s+одновременн/.test(text)) return "concurrency";
+  if (/quota|headroom|weekly|limit|лимит|остат(?:ок|ка)\s+(?:квот|подписк)/.test(text)) return "limit";
+  return "";
+}
+
+function currentQuotaReason(team, taskStatus) {
+  if (!team || team.assignment_state !== "pending" || String(team.status || "").toLowerCase() !== taskStatus) return "";
+  if (team.quota_reason) return String(team.quota_reason);
+  var selection = String(team.selection_reason || "");
+  var marker = selection.match(/Выбор ресурса:\s*([\s\S]*)$/i);
+  return marker ? marker[1].trim() : "";
+}
+
+function ownerInput(team, context) {
+  if (!team) return null;
+  var approval = team.approval || {};
+  var requestId = team.request_id || team.requestId;
+  var blocker = String(team.blocker || team.blocked_reason || "").trim();
+  var stage = String(team.stage || "").toLowerCase();
+  var awaitingStages = ["awaiting_owner_input", "awaiting_requirements", "awaiting_plan", "awaiting_delivery"];
+  var awaiting = awaitingStages.indexOf(stage) !== -1 || approval.status === "pending" || approval.status === "needed" || approval.required === true;
+  if (!awaiting) return null;
+  var reason = blocker ? shortOperatorText(blocker, 150) : "Команда ждёт вашего ответа или согласования.";
+  return {
+    reason: reason,
+    action: "Откройте карточку запроса и ответьте команде.",
+    href: requestId ? "/engineering-team?request=" + encodeURIComponent(requestId) : undefined,
+    linkLabel: requestId ? "Открыть запрос" : undefined,
+  };
+}
+
+function unresolvedParents(task, context) {
+  var links = context.links || {};
+  var parents = Array.isArray(links.parents) ? links.parents : [];
+  var all = Array.isArray(context.allTasks) ? context.allTasks : [];
+  return parents.map(function (parent) {
+    var id = typeof parent === "string" ? parent : parent && (parent.id || parent.parent_id || parent.task_id);
+    var found = typeof parent === "object" && parent ? parent : all.find(function (item) { return item && item.id === id; });
+    if (!found || !id || id === task.id) return null;
+    var parentStatus = String(found.status || "").toLowerCase();
+    // Unknown parents are omitted: without a status we cannot explain the
+    // block. Archived work does not satisfy a dependency in the native board.
+    if (!parentStatus || parentStatus === "done" || parentStatus === "complete" || parentStatus === "completed") return null;
+    return { id: id, title: compactTaskTitle(found.title || id), status: parentStatus };
+  }).filter(Boolean);
+}
+
+function currentFailure(task, context) {
+  var runs = Array.isArray(context.runs) ? context.runs.slice() : [];
+  runs.sort(function (a, b) { return runTime(b) - runTime(a); });
+  var latest = runs[0];
+  var latestFailed = latest && /failed|error|gave[_ -]?up|timeout|timed[_ -]?out/i.test(String(latest.status || "") + " " + String(latest.outcome || ""));
+  // A newer successful or active run supersedes an older failure.
+  if (latest && !latestFailed) return "";
+  if (latestFailed && (latest.error || latest.summary || latest.outcome)) return latest.error || latest.summary || latest.outcome;
+  if (task.last_failure_error && (task.consecutive_failures == null || Number(task.consecutive_failures) > 0)) return task.last_failure_error;
+  var diagnostics = Array.isArray(context.diagnostics) ? context.diagnostics : [];
+  var diag = diagnostics.find(function (item) {
+    return item && /error|failure|failed|blocked/i.test(String(item.severity || "") + " " + String(item.kind || "")) && (item.detail || item.title);
+  });
+  if (diag) return diag.detail || diag.title;
+  var events = Array.isArray(context.events) ? context.events.slice() : [];
+  events.sort(function (a, b) { return eventTime(b) - eventTime(a); });
+  var event = events[0];
+  if (!event || !/failed|error|gave_up|timeout/i.test(String(event.kind || ""))) return "";
+  if (event) {
+    var payload = event.payload;
+    if (typeof payload === "string") {
+      try { payload = JSON.parse(payload); } catch (_) { return payload; }
+    }
+    if (payload && typeof payload === "object") return payload.error || payload.message || payload.reason || payload.detail || event.kind;
+    return event.kind;
+  }
+  return "";
+}
+
+function readableFailure(value) {
+  var text = String(value || "").replace(/\s+/g, " ").trim();
+  if (!text) return "Последний запуск завершился ошибкой.";
+  var lower = text.toLowerCase();
+  if (/max[_ -]?concurrent|reached max concurrent/.test(lower)) return "Ждёт свободного слота модели.";
+  if (/iteration(?:s)?[ _-]?(?:budget|limit)|max(?:imum)?[ _-]?iterations|reached.{0,24}iterations|gave[_ -]?up.{0,24}\d+\s*\/\s*\d+/i.test(lower)) return "Исчерпан лимит попыток этого запуска.";
+  if (/authentication|unauthorized|invalid[_ -]?api[_ -]?key|401/.test(lower)) return "Не прошла авторизация провайдера модели.";
+  if (/rate.?limit|too many requests|\b429\b/.test(lower)) return "Провайдер временно ограничил частоту запросов.";
+  if (/timed?\s*out|timeout|deadline exceeded/.test(lower)) return "Запуск превысил допустимое время.";
+  if (/connection refused|connection reset|network is unreachable|dns|name or service not known/.test(lower)) return "Не удалось подключиться к нужному сервису.";
+  if (/no space left|disk full/.test(lower)) return "На диске закончилось место.";
+  if (/permission denied|operation not permitted/.test(lower)) return "Не хватает прав для выполнения операции.";
+  if (/test.*fail|failed.*test|assertionerror/.test(lower)) return "Не прошли проверки или тесты.";
+  // Avoid flooding the board with paths, traces and machine-specific data.
+  text = text.replace(/(?:\/[^\s:]+){2,}/g, "путь к файлу").replace(/\b0x[0-9a-f]+\b/gi, "");
+  return shortOperatorText(text, 180);
+}
+
+function shortOperatorText(value, maxLength) {
+  var text = String(value || "").replace(/\s+/g, " ").trim();
+  if (text.length > maxLength) text = text.slice(0, maxLength - 1).trimEnd() + "…";
+  return text;
+}
+
+function runTime(run) {
+  return timestamp(run && (run.ended_at || run.started_at || run.created_at));
+}
+function eventTime(event) {
+  return timestamp(event && (event.created_at || event.timestamp));
+}
+function timestamp(value) {
+  if (typeof value === "number") return value < 100000000000 ? value * 1000 : value;
+  var parsed = Date.parse(value || "");
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+  // END operator-status.js
+
+  function mapTeamTasks(envelope, nativeBoard) {
+    const tasks = {};
+    for (const request of (envelope && envelope.requests) || []) {
+      // Controller cards are intentionally absent from public role assignments.
+      // Bind them via their controller-owned idempotency key, never prompt text.
+      for (const col of (nativeBoard && nativeBoard.columns) || []) {
+        for (const root of col.tasks || []) {
+          if (root.created_by === "hermes-team-controller" && root.assignee === "team-controller" &&
+              String(root.idempotency_key || "").startsWith(request.id + ":root:")) {
+            tasks[root.id] = { request_id: request.id, status: root.status,
+              stage: request.stage, stage_label: request.stage_label, blocker: request.blocker,
+              approval: request.approval, prerequisites: request.prerequisites || [] };
+          }
+        }
+      }
+      for (const task of request.tasks || []) {
+        tasks[task.id] = Object.assign({}, task, { request_id: request.id,
+          stage: request.stage, stage_label: request.stage_label, blocker: request.blocker,
+          approval: request.approval, prerequisites: request.prerequisites || [] });
+      }
+    }
+    return tasks;
+  }
+
+  function operatorColumns(columns, options) {
+    const visible = columns.filter(function (col) {
+      if (options.showAllColumns) return true;
+      if ((col.name === "done" || col.name === "archived") && !options.showDone && !options.forceHistory) return false;
+      return col.tasks.length > 0;
+    });
+    if (visible.length) return visible;
+    // An empty board keeps an obvious place to create the first task.
+    return columns.filter(function (col) { return col.name === "triage"; });
+  }
+
+  async function loadBlockedContexts(data, board, cache) {
+    const blocked = data.columns.reduce(function (list, col) {
+      return list.concat(col.tasks.filter(function (task) { return task.status === "blocked"; }));
+    }, []);
+    const contexts = {};
+    const pending = [];
+    for (const task of blocked) {
+      const key = (board || "default") + ":" + task.id;
+      const revision = JSON.stringify([task.status, task.comment_count, task.current_run_id,
+        task.last_failure_error, task.consecutive_failures, task.block_kind, task.link_counts]);
+      const old = cache.get(key);
+      if (old && old.revision === revision && Date.now() - old.at < 60000) contexts[task.id] = old.context;
+      else pending.push({ task, key, revision });
+    }
+    for (let offset = 0; offset < pending.length; offset += 4) {
+      await Promise.all(pending.slice(offset, offset + 4).map(async function (item) {
+        try {
+          const detail = await SDK.fetchJSON(withBoard(`${API}/tasks/${encodeURIComponent(item.task.id)}`, board));
+          // A status change in flight must not attach an old failure to a new run.
+          if (!detail.task || detail.task.status !== item.task.status) return;
+          const context = { links: detail.links, runs: detail.runs, events: detail.events,
+            diagnostics: detail.task.diagnostics || [] };
+          contexts[item.task.id] = context;
+          cache.set(item.key, { revision: item.revision, at: Date.now(), context });
+        } catch (_) { /* Missing diagnostics are explicit in operatorStatus. */ }
+      }));
+    }
+    return contexts;
+  }
+
   function KanbanPage() {
     const { t } = useI18n();
     const kanbanDialogs = useKanbanDialogs(t);
@@ -625,7 +1196,14 @@
     const [assigneeFilter, setAssigneeFilter] = useState("");
     const [includeArchived, setIncludeArchived] = useState(false);
     const [search, setSearch] = useState("");
-    const [laneByProfile, setLaneByProfile] = useState(true);
+    const [laneByProfile, setLaneByProfile] = useState(false);
+    const [showAllColumns, setShowAllColumns] = useState(false);
+    const [showDone, setShowDone] = useState(false);
+    const [showCreateTask, setShowCreateTask] = useState(false);
+    const [teamTasks, setTeamTasks] = useState({});
+    const [taskContexts, setTaskContexts] = useState({});
+    const contextCacheRef = useRef(new Map());
+    const loadVersionRef = useRef(0);
     const [configApplied, setConfigApplied] = useState(false);
 
     const [selectedTaskId, setSelectedTaskId] = useState(null);
@@ -654,7 +1232,7 @@
           setConfig(c);
           if (!configApplied) {
             if (c.default_tenant) setTenantFilter(c.default_tenant);
-            if (typeof c.lane_by_profile === "boolean") setLaneByProfile(c.lane_by_profile);
+            // Compact view is the default; profile grouping remains available in view options.
             if (typeof c.include_archived_by_default === "boolean") setIncludeArchived(c.include_archived_by_default);
             setConfigApplied(true);
           }
@@ -662,23 +1240,40 @@
         .catch(function () { setConfig({ render_markdown: true }); });
     }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
-    // --- fetch full board ---------------------------------------------------
+    // Board data and one team snapshot share a refresh. Details are fetched only
+    // for waiting cards, bounded to four in flight and cached by native revision.
     const loadBoard = useCallback(() => {
+      const version = ++loadVersionRef.current;
       const qs = new URLSearchParams();
       if (tenantFilter) qs.set("tenant", tenantFilter);
       if (includeArchived) qs.set("include_archived", "true");
       const url = qs.toString() ? `${API}/board?${qs}` : `${API}/board`;
-      return SDK.fetchJSON(withBoard(url, board))
-        .then(function (data) {
-          setBoardData(data);
-          cursorRef.current = data.latest_event_id || 0;
-          setError(null);
-        })
-        .catch(function (err) {
-          setError(String(err && err.message ? err.message : err));
-        })
-        .finally(function () { setLoading(false); });
+      return Promise.all([
+        SDK.fetchJSON(withBoard(url, board)),
+        SDK.fetchJSON("/api/plugins/engineering-team/requests").catch(function () { return null; }),
+      ]).then(function (results) {
+        if (loadVersionRef.current !== version) return;
+        const data = results[0];
+        setBoardData(data);
+        setTeamTasks(mapTeamTasks(results[1], data));
+        cursorRef.current = data.latest_event_id || 0;
+        setError(null);
+        loadBlockedContexts(data, board, contextCacheRef.current).then(function (contexts) {
+          if (loadVersionRef.current === version) setTaskContexts(contexts);
+        });
+      }).catch(function (err) {
+        if (loadVersionRef.current === version) setError(String(err && err.message ? err.message : err));
+      }).finally(function () {
+        if (loadVersionRef.current === version) setLoading(false);
+      });
     }, [tenantFilter, includeArchived, board]);
+
+    useEffect(function () {
+      const timer = window.setInterval(function () {
+        if (!document.hidden) loadBoard();
+      }, 30000);
+      return function () { window.clearInterval(timer); };
+    }, [loadBoard]);
 
     // --- load list of boards for the switcher ------------------------------
     const loadBoardList = useCallback(function () {
@@ -757,7 +1352,10 @@
                 setTaskEventTick(function (prev) {
                   const next = Object.assign({}, prev);
                   for (const e of msg.events) {
-                    if (e && e.task_id) next[e.task_id] = (next[e.task_id] || 0) + 1;
+                    if (e && e.task_id) {
+                      next[e.task_id] = (next[e.task_id] || 0) + 1;
+                      contextCacheRef.current.delete((board || "default") + ":" + e.task_id);
+                    }
                   }
                   return next;
                 });
@@ -792,9 +1390,19 @@
       };
     }, [!!boardData, board, scheduleReload]);
 
+    // Keep operator context separate from persisted task data.
+    const enrichedBoard = useMemo(function () {
+      if (!boardData) return null;
+      return Object.assign({}, boardData, { columns: boardData.columns.map(function (col) {
+        return Object.assign({}, col, { tasks: col.tasks.map(function (task) {
+          return Object.assign({}, task, { _team: teamTasks[task.id] || null, _operatorContext: taskContexts[task.id] || {} });
+        }) });
+      }) });
+    }, [boardData, teamTasks, taskContexts]);
+
     // --- filtering ----------------------------------------------------------
     const filteredBoard = useMemo(function () {
-      if (!boardData) return null;
+      if (!enrichedBoard) return null;
       const q = search.trim().toLowerCase();
       const filterTask = function (t) {
         if (tenantFilter && t.tenant !== tenantFilter) return false;
@@ -805,12 +1413,12 @@
         }
         return true;
       };
-      return Object.assign({}, boardData, {
-        columns: boardData.columns.map(function (col) {
+      return Object.assign({}, enrichedBoard, {
+        columns: enrichedBoard.columns.map(function (col) {
           return Object.assign({}, col, { tasks: col.tasks.filter(filterTask) });
         }),
       });
-    }, [boardData, tenantFilter, assigneeFilter, search]);
+    }, [enrichedBoard, tenantFilter, assigneeFilter, search]);
 
     // --- actions ------------------------------------------------------------
     // Performs the actual move (optimistic UI + PATCH) once any required
@@ -1143,7 +1751,10 @@
       // Optimistic UI: clear the current grid + show loading, reset the
       // event cursor so the WS reopens aligned to the new board's
       // latest_event_id on the next loadBoard.
+      ++loadVersionRef.current;
       setBoardData(null);
+      setTeamTasks({});
+      setTaskContexts({});
       cursorRef.current = 0;
       setLoading(true);
       setBoard(nextSlug);
@@ -1254,12 +1865,21 @@
     if (!filteredBoard) return null;
 
     const renderMd = !config || config.render_markdown !== false;
+    const allTasks = enrichedBoard.columns.reduce(function (acc, c) { return acc.concat(c.tasks); }, []);
+    const displayBoard = Object.assign({}, filteredBoard, { columns: operatorColumns(filteredBoard.columns, {
+      showAllColumns, showDone, forceHistory: !!(search.trim() || tenantFilter || assigneeFilter || includeArchived),
+    }) });
+    const visibleCount = displayBoard.columns.reduce(function (n, c) { return n + c.tasks.length; }, 0);
+    const filteredCount = filteredBoard.columns.reduce(function (n, c) { return n + c.tasks.length; }, 0);
+    const doneCount = filteredBoard.columns.filter(function (c) { return c.name === "done" || c.name === "archived"; })
+      .reduce(function (n, c) { return n + c.tasks.length; }, 0);
 
     return h(ErrorBoundary, null,
       h("div", { className: "hermes-kanban flex flex-col gap-4" },
         h(BoardSwitcher, {
           board: board,
           boardList: boardList,
+          totalTasks: allTasks.length,
           onSwitch: switchBoard,
           onNewClick: function () { setShowNewBoard(true); },
           onSettingsClick: function () { setShowBoardSettings(true); },
@@ -1291,14 +1911,27 @@
           assigneeFilter, setAssigneeFilter,
           includeArchived, setIncludeArchived,
           laneByProfile, setLaneByProfile,
+          showAllColumns, setShowAllColumns, showDone, setShowDone, doneCount,
+          onNewTask: function () { setShowCreateTask(true); },
           search, setSearch,
           onNudgeDispatch: function () {
             SDK.fetchJSON(withBoard(`${API}/dispatch?max=8`, board), { method: "POST" })
               .then(loadBoard)
               .catch(function (e) { setError(String(e.message || e)); });
           },
-          onRefresh: loadBoard,
+          onRefresh: function () { contextCacheRef.current.clear(); loadBoard(); },
         }),
+        h("p", { className: "hermes-kanban-view-hint", role: "status" },
+          `Показано ${visibleCount} из ${filteredCount} задач. `,
+          visibleCount < filteredCount ? "Завершённые — в истории. " : "",
+          "Нажмите на карточку — причина ожидания и следующее действие будут в начале."),
+        showCreateTask ? h(InlineCreate, {
+          columnName: "triage", allTasks,
+          defaultWorkspaceKind: (boardList.find(function (item) { return item.slug === board; }) || {}).default_workspace_kind || "scratch",
+          defaultWorkspacePath: (boardList.find(function (item) { return item.slug === board; }) || {}).default_workdir || "",
+          onSubmit: function (body) { return createTask(body).then(function () { setShowCreateTask(false); }); },
+          onCancel: function () { setShowCreateTask(false); },
+        }) : null,
        selectedIds.size > 0 ? h(BulkActionBar, {
          count: selectedIds.size,
          assignees: (boardData && boardData.assignees) || [],
@@ -1313,7 +1946,7 @@
           dialogState: kanbanDialogs.dialogState,
         }),
         h(BoardColumns, {
-          board: filteredBoard,
+          board: displayBoard,
           boardMeta: boardList.find(function (item) { return item.slug === board; }) || null,
           laneByProfile,
           selectedIds,
@@ -1330,7 +1963,7 @@
           onDeleteSelected: deleteSelected,
           onOpen: setSelectedTaskId,
           onCreate: createTask,
-          allTasks: boardData.columns.reduce(function (acc, c) { return acc.concat(c.tasks); }, []),
+          allTasks: allTasks,
         }),
         selectedTaskId ? h(TaskDrawer, {
           taskId: selectedTaskId,
@@ -1339,9 +1972,10 @@
           onOpenTask: setSelectedTaskId,
           onRefresh: loadBoard,
           renderMarkdown: renderMd,
-          allTasks: boardData.columns.reduce(function (acc, c) { return acc.concat(c.tasks); }, []),
+          allTasks: allTasks,
           assignees: (boardData && boardData.assignees) || [],
           eventTick: taskEventTick[selectedTaskId] || 0,
+          teamTask: teamTasks[selectedTaskId] || null,
           // Hook for the side-drawer's doPatch to use the same in-app
           // dialog machinery as the column-card flow. TaskDetail also
           // owns its own kanbanDialogs so the dialog portal mounts in
@@ -1388,7 +2022,7 @@
   }
 
   function AttentionStrip(props) {
-    const { t } = useI18n();
+    const { t, uiText } = useI18n();
     const [expanded, setExpanded] = useState(false);
     const [dismissed, setDismissed] = useState(false);
     const diagTasks = useMemo(
@@ -1426,7 +2060,7 @@
         h("button", {
           className: "hermes-kanban-attention-dismiss",
           onClick: function () { setDismissed(true); },
-          title: "Hide until next page reload",
+          title: uiText("Hide until next page reload", "Скрыть до следующей перезагрузки страницы"),
           type: "button",
         }, "\u2715"),
       ),
@@ -1774,13 +2408,14 @@
   // page in a new tab so users can look up what any of the widgets mean
   // without losing the current board view.
   function DocsLink() {
+    const { uiText } = useI18n();
     return h("a", {
       href: DOCS_URL,
       target: "_blank",
       rel: "noopener noreferrer",
       className: "hermes-kanban-docs-link",
-      title: "Open Hermes Kanban docs in a new tab",
-      "aria-label": "Hermes Kanban documentation",
+      title: uiText("Open Hermes Kanban docs in a new tab", "Открыть документацию Hermes Kanban в новой вкладке"),
+      "aria-label": uiText("Hermes Kanban documentation", "Документация Hermes Kanban"),
     }, "?");
   }
 
@@ -1792,6 +2427,7 @@
   // ---------------------------------------------------------------------
 
   function OrchestrationPanel() {
+    const { t, uiText } = useI18n();
     const [expanded, setExpanded] = useState(false);
     const [settings, setSettings] = useState(null);
     const [profiles, setProfiles] = useState([]);
@@ -1807,7 +2443,7 @@
         setProfiles((results[1] && results[1].profiles) || []);
         setMsg(null);
       }).catch(function (err) {
-        setMsg({ ok: false, text: "Failed to load: " + (err.message || String(err)) });
+        setMsg({ ok: false, text: tx(t, "loadSettingsFailed", "Failed to load: ") + (err.message || String(err)) });
       });
     }, []);
 
@@ -1825,10 +2461,10 @@
         body: JSON.stringify(patch),
       }).then(function (res) {
         setSettings(res);
-        setMsg({ ok: true, text: "Settings saved." });
+        setMsg({ ok: true, text: tx(t, "settingsSaved", "Settings saved.") });
         return res;
       }).catch(function (err) {
-        setMsg({ ok: false, text: "Save failed: " + (err.message || String(err)) });
+        setMsg({ ok: false, text: tx(t, "saveFailed", "Save failed: ") + (err.message || String(err)) });
       });
     };
 
@@ -1840,9 +2476,9 @@
         body: JSON.stringify({ description: description }),
       }).then(function () {
         loadAll();
-        setMsg({ ok: true, text: `Description saved for ${name}.` });
+        setMsg({ ok: true, text: tx(t, "descriptionSaved", "Description saved for {name}.", { name: name }) });
       }).catch(function (err) {
-        setMsg({ ok: false, text: "Save failed: " + (err.message || String(err)) });
+        setMsg({ ok: false, text: tx(t, "saveFailed", "Save failed: ") + (err.message || String(err)) });
       }).then(function () {
         setBusy(function (b) {
           const next = Object.assign({}, b); delete next[name]; return next;
@@ -1863,11 +2499,11 @@
         } else {
           setMsg({
             ok: false,
-            text: "Auto-generate failed: " + ((res && res.reason) || "unknown error"),
+            text: tx(t, "autoGenerateFailed", "Auto-generate failed: ") + ((res && res.reason) || "unknown error"),
           });
         }
       }).catch(function (err) {
-        setMsg({ ok: false, text: "Auto-generate failed: " + (err.message || String(err)) });
+        setMsg({ ok: false, text: tx(t, "autoGenerateFailed", "Auto-generate failed: ") + (err.message || String(err)) });
       }).then(function () {
         setBusy(function (b) {
           const next = Object.assign({}, b); delete next[name]; return next;
@@ -1876,8 +2512,8 @@
     };
 
     const headerLabel = expanded
-      ? "▾ Orchestration settings"
-      : "▸ Orchestration settings";
+      ? uiText("▾ Orchestration settings", "▾ Настройки оркестрации")
+      : uiText("▸ Orchestration settings", "▸ Настройки оркестрации");
 
     // Mode pill — always visible (collapsed or expanded). One click flips
     // between Auto and Manual. Auto = dispatcher decomposes new triage tasks
@@ -1886,10 +2522,10 @@
     // stay in triage until then.
     const autoOn = !!(settings && settings.auto_decompose);
     const modePillTitle = settings === null
-      ? "Loading mode…"
+      ? uiText("Loading mode…", "Загрузка режима…")
       : (autoOn
-          ? "Orchestration: Auto — the dispatcher decomposes new triage tasks automatically every tick. Click to switch to Manual (pre-PR behavior)."
-          : "Orchestration: Manual — triage tasks stay in triage until you click ⚗ Decompose on each card. Click to switch to Auto.");
+          ? uiText("Orchestration: Auto — the dispatcher decomposes new triage tasks automatically every tick. Click to switch to Manual (pre-PR behavior).", "Оркестрация: автоматически — диспетчер разбирает новые задачи на сортировке при каждом цикле. Нажмите, чтобы включить ручной режим.")
+          : uiText("Orchestration: Manual — triage tasks stay in triage until you click ⚗ Decompose on each card. Click to switch to Auto.", "Оркестрация: вручную — задачи остаются в сортировке, пока вы не нажмёте ⚗ Разложить на карточке. Нажмите, чтобы включить автоматический режим."));
     const modePill = h("button", {
       type: "button",
       onClick: function () {
@@ -1904,9 +2540,9 @@
                     ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
                     : "border-muted-foreground/30 bg-muted/30 text-muted-foreground"),
     },
-      "Orchestration: ",
+      uiText("Orchestration: ", "Оркестрация: "),
       h("span", { className: "ml-1 font-semibold" },
-        settings === null ? "…" : (autoOn ? "Auto" : "Manual"))
+        settings === null ? "…" : (autoOn ? uiText("Auto", "Автоматически") : uiText("Manual", "Вручную")))
     );
 
     if (!expanded) {
@@ -1916,7 +2552,7 @@
           type: "button",
           onClick: function () { setExpanded(true); },
           className: "underline text-muted-foreground hover:text-foreground",
-          title: "Configure the kanban orchestrator (profile picker, default assignee, auto-decompose, profile descriptions)",
+          title: uiText("Configure the kanban orchestrator (profile picker, default assignee, auto-decompose, profile descriptions)", "Настроить оркестрацию канбана: выбрать профиль, исполнителя по умолчанию, автоматическую декомпозицию и описания профилей"),
         }, headerLabel),
       );
     }
@@ -1935,7 +2571,7 @@
             className: "text-sm font-medium underline-offset-2 hover:underline",
           }, headerLabel),
           modePill,
-          h(Button, { onClick: loadAll, size: "sm" }, "Reload"),
+          h(Button, { onClick: loadAll, size: "sm" }, tx(t, "refresh", "Reload")),
         ),
         msg ? h("div", {
           className: msg.ok ? "hermes-kanban-msg-ok" : "hermes-kanban-msg-err",
@@ -1944,7 +2580,7 @@
         settings ? h("div", { className: "grid gap-3 sm:grid-cols-3" },
           h("div", { className: "flex flex-col gap-1" },
             h(Label, { className: "text-xs text-muted-foreground" },
-              "Orchestrator profile"),
+              uiText("Orchestrator profile", "Профиль оркестратора")),
             h(Select, Object.assign({
               value: settings.orchestrator_profile || "",
               className: "h-8",
@@ -1952,17 +2588,17 @@
               saveSettings({ orchestrator_profile: v });
             })),
               h(SelectOption, { value: "" },
-                "(default: " + (settings.active_profile || "default") + ")"),
+                uiText("(default: ", "(по умолчанию: ") + (settings.active_profile || "default") + ")"),
               profileOptions,
             ),
             h("div", { className: "text-[10px] text-muted-foreground" },
-              "Resolved: " + (settings.resolved_orchestrator_profile || "default")),
+              uiText("Resolved: ", "Фактически используется: ") + (settings.resolved_orchestrator_profile || "default")),
             h("div", { className: "text-[10px] text-muted-foreground" },
-              "Owns the root task after fan-out (wakes back up to judge completion). Does not drive how tasks split — configure the decomposer model under auxiliary.kanban_decomposer."),
+              uiText("Owns the root task after fan-out (wakes back up to judge completion). Does not drive how tasks split — configure the decomposer model under auxiliary.kanban_decomposer.", "Ведёт корневую задачу после декомпозиции и возобновляется, чтобы оценить результат. Не управляет разбиением задач — модель декомпозитора настраивается в auxiliary.kanban_decomposer.")),
           ),
           h("div", { className: "flex flex-col gap-1" },
             h(Label, { className: "text-xs text-muted-foreground" },
-              "Default assignee"),
+              uiText("Default assignee", "Исполнитель по умолчанию")),
             h(Select, Object.assign({
               value: settings.default_assignee || "",
               className: "h-8",
@@ -1970,15 +2606,15 @@
               saveSettings({ default_assignee: v });
             })),
               h(SelectOption, { value: "" },
-                "(default: " + (settings.active_profile || "default") + ")"),
+                uiText("(default: ", "(по умолчанию: ") + (settings.active_profile || "default") + ")"),
               profileOptions,
             ),
             h("div", { className: "text-[10px] text-muted-foreground" },
-              "Resolved: " + (settings.resolved_default_assignee || "default")),
+              uiText("Resolved: ", "Фактически используется: ") + (settings.resolved_default_assignee || "default")),
           ),
           h("div", { className: "flex flex-col gap-1" },
             h(Label, { className: "text-xs text-muted-foreground" },
-              "Orchestration mode"),
+              uiText("Orchestration mode", "Режим оркестрации")),
             h("label", { className: "flex items-center gap-2 text-xs h-8" },
               h(Checkbox, {
                 checked: !!settings.auto_decompose,
@@ -1986,23 +2622,23 @@
                   saveSettings({ auto_decompose: checked === true });
                 },
               }),
-              "Auto-decompose triage tasks",
+              uiText("Auto-decompose triage tasks", "Автоматически разбирать задачи на сортировке"),
             ),
             h("div", { className: "text-[10px] text-muted-foreground" },
               settings.auto_decompose
-                ? "The dispatcher decomposes new triage tasks automatically."
-                : "Triage tasks stay in triage until you click ⚗ Decompose."),
+                ? uiText("The dispatcher decomposes new triage tasks automatically.", "Диспетчер автоматически разбирает новые задачи на сортировке.")
+                : uiText("Triage tasks stay in triage until you click ⚗ Decompose.", "Задачи остаются на сортировке, пока вы не нажмёте ⚗ Разложить.")),
           ),
         ) : h("div", { className: "text-xs text-muted-foreground" },
           "Loading…"),
 
         h("div", { className: "border-t pt-3" },
           h(Label, { className: "text-xs text-muted-foreground" },
-            "Profile descriptions"),
+            uiText("Profile descriptions", "Описания профилей")),
           h("div", { className: "text-[10px] text-muted-foreground pb-2" },
-            "Descriptions guide the decomposer's routing. Click ⚗ to auto-generate, or edit and save."),
+            uiText("Descriptions guide the decomposer's routing. Click ⚗ to auto-generate, or edit and save.", "Описания помогают декомпозитору выбирать исполнителей. Нажмите ⚗ для создания описания или отредактируйте его и сохраните.")),
           profiles.length === 0
-            ? h("div", { className: "text-xs text-muted-foreground" }, "No profiles installed.")
+            ? h("div", { className: "text-xs text-muted-foreground" }, uiText("No profiles installed.", "Профили не установлены."))
             : h("div", { className: "flex flex-col gap-2" },
                 profiles.map(function (p) {
                   return h(ProfileDescriptionRow, {
@@ -2020,6 +2656,7 @@
   }
 
   function ProfileDescriptionRow(props) {
+    const { t, uiText } = useI18n();
     const p = props.profile;
     const [draft, setDraft] = useState(p.description || "");
     const busy = props.busy;
@@ -2029,48 +2666,48 @@
       setDraft(p.description || "");
     }, [p.description]);
 
-    const tag = p.description_auto && p.description ? " [auto, review]" : "";
+    const tag = p.description_auto && p.description ? uiText(" [auto, review]", " [автоматически, проверить]") : "";
     return h("div", { className: "flex flex-col gap-1 border-l-2 pl-2",
       style: { borderColor: p.description ? "#888" : "#cc6" } },
       h("div", { className: "flex items-center gap-2 text-xs" },
         h("span", { className: "font-medium" }, p.name),
-        p.is_default ? h("span", { className: "text-[10px] text-muted-foreground" }, "(default)") : null,
+        p.is_default ? h("span", { className: "text-[10px] text-muted-foreground" }, uiText("(default)", "(по умолчанию)")) : null,
         p.description_auto && p.description
-          ? h("span", { className: "text-[10px] text-yellow-600" }, "auto — review")
+          ? h("span", { className: "text-[10px] text-yellow-600" }, uiText("auto — review", "автоматически — проверить"))
           : null,
         !p.description
-          ? h("span", { className: "text-[10px] text-yellow-600" }, "⚠ no description")
+          ? h("span", { className: "text-[10px] text-yellow-600" }, uiText("⚠ no description", "⚠ нет описания"))
           : null,
       ),
       h("div", { className: "flex items-center gap-2" },
         h(Input, {
           value: draft,
           onChange: function (e) { setDraft(e.target.value); },
-          placeholder: "What is this profile good at?",
+          placeholder: uiText("What is this profile good at?", "В чём силён этот профиль?"),
           className: "h-7 text-xs flex-1",
         }),
         h(Button, {
           onClick: function () { props.onSave(p.name, draft); },
           size: "sm",
           disabled: !!busy || draft === (p.description || ""),
-          title: "Save the description above as user-authored",
-        }, busy === "save" ? "Saving…" : "Save"),
+          title: uiText("Save the description above as user-authored", "Сохранить описание как написанное вручную"),
+        }, busy === "save" ? uiText("Saving…", "Сохранение…") : tx(t, "save", "Save")),
         h(Button, {
           onClick: function () { props.onAuto(p.name, true); },
           size: "sm",
           disabled: !!busy,
-          title: "Auto-generate a description from this profile's skills and model",
-        }, busy === "auto" ? "Generating…" : "⚗ Auto"),
+          title: uiText("Auto-generate a description from this profile's skills and model", "Создать описание по навыкам и модели этого профиля"),
+        }, busy === "auto" ? uiText("Generating…", "Создание…") : "⚗ " + uiText("Auto", "Авто")),
       ),
     );
   }
 
   function BoardSwitcher(props) {
-    const { t } = useI18n();
+    const { t, uiText, locale } = useI18n();
     const list = props.boardList || [];
     const current = list.find(function (b) { return b.slug === props.board; });
     const currentName = current && current.name ? current.name : props.board;
-    const currentTotal = current ? current.total : 0;
+    const currentTotal = props.totalTasks != null ? props.totalTasks : (current ? current.total : 0);
     const hasMultipleBoards = list.length > 1;
 
     // Hide entirely when only the default board exists AND it's empty —
@@ -2110,8 +2747,8 @@
             h(Select, Object.assign({
               value: props.board,
               className: "h-8 min-w-[220px]",
-              "aria-label": "Switch kanban board",
-              title: "Boards are independent work streams. Each board has its own tasks, tenants, and assignees.",
+              "aria-label": uiText("Switch kanban board", "Переключить доску Kanban"),
+              title: uiText("Boards are independent work streams. Each board has its own tasks, tenants, and assignees.", "Доски — независимые потоки работы. У каждой свои задачи, тенанты и исполнители."),
             }, selectChangeHandler(function (v) { if (v) props.onSwitch(v); })),
               list.map(function (b) {
                 const label = b.total > 0
@@ -2120,8 +2757,10 @@
                 return h(SelectOption, { key: b.slug, value: b.slug }, label);
               }),
             ),
-            h("span", { className: "text-xs text-muted-foreground" },
-              `${currentTotal || 0} task${currentTotal === 1 ? "" : "s"}`),
+              h("span", { className: "text-xs text-muted-foreground" },
+                /^ru(?:[-_]|$)/i.test(locale)
+                  ? pluralRu(currentTotal || 0, ["задача", "задачи", "задач"])
+                  : `${currentTotal || 0} task${currentTotal === 1 ? "" : "s"}`),
           ),
         ),
         h("div", { className: "flex-1" }),
@@ -2137,7 +2776,7 @@
           onClick: props.onNewClick,
           size: "sm",
           className: "h-8",
-          title: "Create a new board. Useful when you want an unrelated work stream (different project, different team, isolated scratch area).",
+          title: uiText("Create a new board. Useful when you want an unrelated work stream (different project, different team, isolated scratch area).", "Создать отдельную доску для другого проекта, команды или изолированного временного потока работы."),
         }, tx(t, "newBoard", "+ New board")),
         props.board !== "default"
           ? h(Button, {
@@ -2169,8 +2808,153 @@
     );
   }
 
+  // Browse the Hermes server, not the browser computer. Reuse the managed
+  // Files API so authentication, sensitive-path filtering and locked roots
+  // have exactly the same policy as the dashboard Files page.
+  function ProjectDirectoryField(props) {
+    const { t, uiText } = useI18n();
+    const [open, setOpen] = useState(false);
+    const [listing, setListing] = useState(null);
+    const [pathInput, setPathInput] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const request = useRef(0);
+    const browseButton = useRef(null);
+
+    useEffect(function () {
+      return function () { request.current += 1; };
+    }, []);
+
+    async function load(path) {
+      const current = ++request.current;
+      setLoading(true);
+      setError(null);
+      setListing(null);
+      try {
+        const result = await SDK.api.listFiles(path || undefined);
+        if (request.current !== current) return;
+        setListing(result);
+        setPathInput(result.path);
+      } catch (e) {
+        if (request.current === current) setError(parseApiErrorMessage(e));
+      } finally {
+        if (request.current === current) setLoading(false);
+      }
+    }
+
+    function close() {
+      request.current += 1;
+      setOpen(false);
+      if (browseButton.current) browseButton.current.focus();
+    }
+
+    const directories = listing ? listing.entries.filter(function (entry) {
+      return entry.is_directory;
+    }) : [];
+
+    return h("fieldset", {
+      disabled: props.disabled,
+      className: "flex flex-col gap-2",
+      style: { border: 0, padding: 0, margin: 0, minWidth: 0 },
+    },
+      h("div", { style: { display: "flex", gap: "0.5rem", alignItems: "center" } },
+        h(Input, {
+          value: props.value,
+          onChange: function (e) { props.onChange(e.target.value); },
+          "aria-label": tx(t, "projectDirectory", "Project directory"),
+          placeholder: tx(t, "projectDirectoryPlaceholder", "~/projects/my-app"),
+          title: tx(t, "projectDirectoryHelp", "Project directory on the Hermes server"),
+          className: "h-8",
+          style: { minWidth: 0, flex: 1 },
+          disabled: props.disabled,
+          autoCapitalize: "none", autoCorrect: "off", spellCheck: false,
+        }),
+        h(Button, {
+          ref: browseButton, type: "button", size: "sm", variant: "outline",
+          disabled: props.disabled, "aria-expanded": open,
+          onClick: function () {
+            if (open) { close(); return; }
+            const start = props.value.trim();
+            setPathInput(start);
+            setOpen(true);
+            void load(start);
+          },
+        }, uiText("Browse…", "Обзор…")),
+      ),
+      open ? h("section", {
+        role: "region", "aria-label": uiText("Choose a server folder", "Выбор папки на сервере"),
+        className: "flex flex-col gap-2",
+        style: { padding: "0.75rem", border: "1px solid var(--color-border)", borderRadius: "0.5rem" },
+        onKeyDown: function (e) {
+          if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); }
+        },
+      },
+        h("div", { className: "text-xs text-muted-foreground" },
+          uiText("Folders available to Hermes on the server. Your computer's folders are not shown.",
+            "Папки, доступные Hermes на сервере. Папки вашего компьютера здесь не отображаются.")),
+        h("div", { style: { display: "flex", gap: "0.5rem" } },
+          h(Input, {
+            value: pathInput, onChange: function (e) { setPathInput(e.target.value); },
+            "aria-label": uiText("Server folder path", "Путь к папке на сервере"),
+            autoFocus: true, autoCapitalize: "none", autoCorrect: "off", spellCheck: false,
+            className: "h-8", style: { minWidth: 0, flex: 1 },
+            disabled: loading || !!(listing && !listing.can_change_path),
+            onKeyDown: function (e) {
+              if (e.key === "Enter") {
+                e.preventDefault(); e.stopPropagation();
+                if (!loading) void load(pathInput.trim());
+              }
+            },
+          }),
+          h(Button, {
+            type: "button", size: "sm", variant: "outline", disabled: loading,
+            onClick: function () { void load(pathInput.trim()); },
+          }, uiText("Go", "Перейти")),
+        ),
+        h("div", { style: { display: "flex", flexWrap: "wrap", gap: "0.5rem" } },
+          h(Button, {
+            type: "button", size: "sm", variant: "outline",
+            disabled: loading || !listing || !listing.parent,
+            onClick: function () { void load(listing.parent); },
+          }, uiText("Up one level", "На уровень выше")),
+          h(Button, {
+            type: "button", size: "sm", variant: "outline", disabled: loading,
+            onClick: function () { void load(); },
+          }, uiText("Start folder", "Начальная папка")),
+        ),
+        loading ? h("div", { role: "status", className: "text-xs text-muted-foreground" },
+          uiText("Loading folders…", "Загрузка папок…")) : null,
+        error ? h("div", { role: "alert", className: "text-xs text-destructive" },
+          uiText("Could not open folder: ", "Не удалось открыть папку: ") + error) : null,
+        listing ? h("div", {
+          "aria-label": uiText("Subfolders", "Вложенные папки"),
+          style: { maxHeight: "12rem", overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.25rem" },
+        }, directories.length ? directories.map(function (entry) {
+          return h(Button, {
+            key: entry.path, type: "button", size: "sm", variant: "ghost", title: entry.path,
+            style: { justifyContent: "flex-start", minHeight: "2rem", flexShrink: 0, overflow: "hidden" },
+            onClick: function () { void load(entry.path); },
+          }, h("span", { "aria-hidden": true }, "📁 "),
+          h("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, entry.name));
+        }) : h("div", { className: "text-xs text-muted-foreground" },
+          uiText("No subfolders. You can select this folder.", "Вложенных папок нет. Можно выбрать текущую папку."))) : null,
+        listing && listing.locked_root ? h("div", { className: "text-xs text-muted-foreground" },
+          uiText("Available root: ", "Доступный корень: ") + listing.locked_root) : null,
+        h("div", { style: { display: "flex", justifyContent: "flex-end", flexWrap: "wrap", gap: "0.5rem" } },
+          h(Button, { type: "button", size: "sm", variant: "outline", onClick: close },
+            uiText("Cancel selection", "Отменить выбор")),
+          h(Button, {
+            type: "button", size: "sm",
+            disabled: loading || !listing || pathInput.trim() !== listing.path,
+            onClick: function () { props.onChange(listing.path); close(); },
+          }, uiText("Select this folder", "Выбрать эту папку")),
+        ),
+      ) : null,
+    );
+  }
+
   function NewBoardDialog(props) {
-    const { t } = useI18n();
+    const { t, uiText } = useI18n();
     const [slug, setSlug] = useState("");
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
@@ -2252,7 +3036,7 @@
             h(Input, {
               value: description,
               onChange: function (e) { setDescription(e.target.value); },
-              placeholder: "What goes on this board?",
+              placeholder: uiText("What goes on this board?", "Для чего предназначена эта доска?"),
               className: "h-8",
             }),
           ),
@@ -2261,21 +3045,14 @@
               tx(t, "projectDirectory", "Project directory"), " ",
               h("span", { className: "text-muted-foreground" },
                 tx(t, "projectDirectoryHint", "(recommended)"))),
-            h(Input, {
+            h(ProjectDirectoryField, {
               value: projectDirectory,
-              onChange: function (e) { setProjectDirectory(e.target.value); },
-              placeholder: tx(t, "projectDirectoryPlaceholder",
-                "Absolute path to the project folder"),
-              title: tx(t, "projectDirectoryHelp",
-                "Git projects use preserved worktrees. Other folders use the directory directly. Leave blank only for temporary work."),
-              className: "h-8",
-              autoCapitalize: "none",
-              autoCorrect: "off",
-              spellCheck: false,
+              onChange: setProjectDirectory,
+              disabled: submitting,
             }),
             h("div", { className: "text-xs text-muted-foreground" },
               tx(t, "projectDirectoryExplanation",
-                "Sets the default location for task files so project output is preserved.")),
+              uiText("Sets the default location for task files so project output is preserved.", "Задаёт каталог по умолчанию для файлов задач, чтобы сохранять результаты проекта."))),
           ),
           h("div", { className: "flex flex-col gap-1" },
             h(Label, { className: "text-xs" }, tx(t, "icon", "Icon"), " ",
@@ -2319,7 +3096,7 @@
   // is the board-level setting every new task's workspace kind/path is
   // seeded from; task-level values in the create dialog override it.
   function BoardSettingsDialog(props) {
-    const { t } = useI18n();
+    const { t, uiText } = useI18n();
     const b = props.board || {};
     const [name, setName] = useState(b.name || "");
     const [description, setDescription] = useState(b.description || "");
@@ -2375,21 +3152,14 @@
           h("div", { className: "flex flex-col gap-1" },
             h(Label, { className: "text-xs" },
               tx(t, "projectDirectory", "Project directory")),
-            h(Input, {
+            h(ProjectDirectoryField, {
               value: projectDirectory,
-              onChange: function (e) { setProjectDirectory(e.target.value); },
-              placeholder: tx(t, "projectDirectoryPlaceholder",
-                "Absolute path to the project folder"),
-              title: tx(t, "projectDirectoryHelp",
-                "Git projects use preserved worktrees. Other folders use the directory directly. Leave blank only for temporary work."),
-              className: "h-8",
-              autoCapitalize: "none",
-              autoCorrect: "off",
-              spellCheck: false,
+              onChange: setProjectDirectory,
+              disabled: submitting,
             }),
             h("div", { className: "text-xs text-muted-foreground" },
               tx(t, "projectDirectoryOverrideHint",
-                "New tasks inherit this as their workspace default; each task can still override it in the create dialog.")),
+                uiText("New tasks inherit this as their workspace default; each task can still override it in the create dialog.", "Новые задачи наследуют этот каталог. Для каждой задачи его можно изменить при создании."))),
           ),
         ),
         err ? h("div", { className: "text-xs text-destructive mt-2" }, err) : null,
@@ -2418,80 +3188,36 @@
     const { t } = useI18n();
     const tenants = (props.board && props.board.tenants) || [];
     const assignees = (props.board && props.board.assignees) || [];
-    return h("div", { className: "flex flex-wrap items-end gap-3" },
-      h("div", { className: "flex flex-col gap-1",
-                 title: "Fuzzy-match tasks by id, title, or description. Matches across all columns." },
-        h(Label, { className: "text-xs text-muted-foreground" }, tx(t, "search", "Search")),
-        h(Input, {
-          placeholder: tx(t, "filterCards", "Filter cards…"),
-          value: props.search,
-          onChange: function (e) { props.setSearch(e.target.value); },
-          className: "w-56 h-8",
-        }),
-      ),
-      h("div", { className: "flex flex-col gap-1",
-                 title: "Tenants are free-form tags on a task (e.g. customer, project, team). Set them via the task drawer or kanban_create." },
-        h(Label, { className: "text-xs text-muted-foreground" }, tx(t, "tenant", "Tenant")),
-        h(Select, Object.assign({
-          value: props.tenantFilter,
-          className: "h-8",
-        }, selectChangeHandler(props.setTenantFilter)),
-          h(SelectOption, { value: "" }, tx(t, "allTenants", "All tenants")),
-          tenants.map(function (tn) {
-            return h(SelectOption, { key: tn, value: tn }, tn);
-          }),
-        ),
-      ),
-      h("div", { className: "flex flex-col gap-1",
-                 title: "Filter by assigned Hermes profile. Profiles are the named agent identities that claim and work on tasks." },
-        h(Label, { className: "text-xs text-muted-foreground" }, tx(t, "assignee", "Assignee")),
-        h(Select, Object.assign({
-          value: props.assigneeFilter,
-          className: "h-8",
-        }, selectChangeHandler(props.setAssigneeFilter)),
-          h(SelectOption, { value: "" }, tx(t, "allProfiles", "All profiles")),
-          assignees.map(function (a) {
-            return h(SelectOption, { key: a, value: a }, a);
-          }),
-        ),
-      ),
-      h("label", { className: "flex items-center gap-2 text-xs",
-                   title: "Include archived tasks in the board view. Archived tasks are hidden by default." },
-        h(Checkbox, {
-          checked: props.includeArchived,
-          onCheckedChange: function (checked) { props.setIncludeArchived(checked === true); },
-        }),
-        tx(t, "showArchived", "Show archived"),
-      ),
-      h("label", { className: "flex items-center gap-2 text-xs",
-                   title: "Group the Running column by assigned profile" },
-        h(Checkbox, {
-          checked: props.laneByProfile,
-          onCheckedChange: function (checked) { props.setLaneByProfile(checked === true); },
-        }),
-        tx(t, "lanesByProfile", "Lanes by profile"),
-      ),
-      h("div", { className: "flex-1" }),
-      h(Button, {
-        onClick: props.onNudgeDispatch,
-        size: "sm",
-        title: "Wake the dispatcher to claim ready tasks now instead of waiting for the next tick. Use this after adding tasks if you want them picked up immediately.",
-      }, tx(t, "nudgeDispatcher", "Nudge dispatcher")),
-      h(Button, {
-        onClick: props.onRefresh,
-        size: "sm",
-        title: "Reload the board from the database. The board auto-refreshes on task events; this is for forcing a re-read.",
-      }, tx(t, "refresh", "Refresh")),
-      h(Button, {
-        onClick: function () {
-          props.setSearch("");
-          props.setTenantFilter("");
-          props.setAssigneeFilter("");
-          props.setIncludeArchived(false);
-        },
-        size: "sm",
-        title: "Clear all active filters (search, tenant, assignee, archived).",
-      }, tx(t, "clearFilters", "Clear filters")),
+    function toggle(label, checked, setter) {
+      return h("label", { className: "hermes-kanban-view-toggle" },
+        h(Checkbox, { checked: checked, onCheckedChange: function (value) { setter(value === true); } }), label);
+    }
+    return h("div", { className: "hermes-kanban-toolbar" },
+      h("div", { className: "hermes-kanban-toolbar-main" },
+        h(Input, { value: props.search, placeholder: "Найти задачу…", "aria-label": "Поиск задач",
+          onChange: function (e) { props.setSearch(e.target.value); } }),
+        h(Select, Object.assign({ value: props.assigneeFilter, "aria-label": "Исполнитель" }, selectChangeHandler(props.setAssigneeFilter)),
+          h(SelectOption, { value: "" }, "Все исполнители"),
+          assignees.map(function (a) { return h(SelectOption, { key: a, value: a }, operatorRoleLabel(a)); })),
+        h(Button, { onClick: props.onRefresh, size: "sm" }, "Обновить"),
+        h(Button, { onClick: props.onNewTask, size: "sm" }, "+ Задача")),
+      h("div", { className: "hermes-kanban-toolbar-secondary" },
+        toggle(`История · ${props.doneCount || 0}`, props.showDone, props.setShowDone),
+        h("details", { className: "hermes-kanban-view-options" },
+          h("summary", null, "Вид и фильтры"),
+          h("div", { className: "hermes-kanban-view-options-body" },
+            toggle("Все этапы, включая пустые", props.showAllColumns, props.setShowAllColumns),
+            toggle("Группировать по исполнителю", props.laneByProfile, props.setLaneByProfile),
+            toggle("Показывать архив", props.includeArchived, props.setIncludeArchived),
+            h(Label, null, "Метка задачи"),
+            h(Select, Object.assign({ value: props.tenantFilter, "aria-label": "Метка задачи" }, selectChangeHandler(props.setTenantFilter)),
+              h(SelectOption, { value: "" }, "Все метки"),
+              tenants.map(function (tn) { return h(SelectOption, { key: tn, value: tn }, tn); })),
+            h(Button, { onClick: function () {
+              props.setSearch(""); props.setTenantFilter(""); props.setAssigneeFilter(""); props.setIncludeArchived(false);
+            }, size: "sm" }, "Сбросить фильтры"),
+            h(Button, { onClick: props.onNudgeDispatch, size: "sm",
+              title: "Проверить готовые задачи сейчас, сохраняя ограничения квот и зависимостей" }, "Проверить очередь сейчас")))),
     );
   }
 
@@ -2500,7 +3226,7 @@
   // -------------------------------------------------------------------------
 
   function BulkActionBar(props) {
-    const { t } = useI18n();
+    const { t, uiText } = useI18n();
     const [assignee, setAssignee] = useState("");
     const [reclaimFirst, setReclaimFirst] = useState(false);
     const [priority, setPriority] = useState("");
@@ -2510,32 +3236,32 @@
       h(Button, {
         onClick: function () { props.onApply({ status: "todo" }); },
         size: "sm",
-        title: "Move selected tasks to Todo.",
-      }, "→ todo"),
+        title: uiText("Move selected tasks to Todo.", "Переместить выбранные задачи в «К выполнению»."),
+      }, "→ " + uiText("todo", "к выполнению")),
       h(Button, {
         onClick: function () { props.onApply({ status: "ready" }); },
         size: "sm",
-        title: "Move selected tasks to Ready. Ready tasks are picked up by the dispatcher on the next tick.",
-      }, "→ ready"),
+        title: uiText("Move selected tasks to Ready. Ready tasks are picked up by the dispatcher on the next tick.", "Переместить выбранные задачи в «Готово к работе». Диспетчер возьмёт их в следующем цикле."),
+      }, "→ " + uiText("ready", "готово")),
       h(Button, {
         onClick: function () { props.onApply({ status: "blocked" },
-          `Block ${props.count} task(s)?`); },
+          uiText(`Block ${props.count} task(s)?`, `Заблокировать ${pluralRu(props.count, ["задачу", "задачи", "задач"])}?`)); },
         size: "sm",
-        title: "Block selected tasks. Releases any active claims.",
-      }, "Block"),
+        title: uiText("Block selected tasks. Releases any active claims.", "Заблокировать выбранные задачи и освободить активные захваты."),
+      }, tx(t, "block", "Block")),
       h(Button, {
         onClick: function () { props.onApply({ status: "ready" },
-          `Unblock ${props.count} task(s)?`); },
+          uiText(`Unblock ${props.count} task(s)?`, `Снять блокировку с ${pluralRu(props.count, ["задачи", "задач", "задач"])}?`)); },
         size: "sm",
-        title: "Unblock selected tasks (promote to Ready).",
-      }, "Unblock"),
+        title: uiText("Unblock selected tasks (promote to Ready).", "Снять блокировку и переместить выбранные задачи в «Готово к работе»."),
+      }, tx(t, "unblock", "Unblock")),
       h(Button, {
         onClick: function () {
           props.onApply({ status: "done" },
             tx(t, "markDone", "Mark {n} task(s) as done?", { n: props.count }));
         },
         size: "sm",
-        title: "Mark selected tasks as done. Releases any claims and unblocks dependent children. You'll be asked for a completion summary.",
+        title: uiText("Mark selected tasks as done. Releases any claims and unblocks dependent children. You'll be asked for a completion summary.", "Завершить выбранные задачи, освободить захваты и разблокировать дочерние. Потребуется добавить итоговую сводку."),
       }, tx(t, "complete", "Complete")),
       h(Button, {
         onClick: function () {
@@ -2543,7 +3269,7 @@
             tx(t, "markArchived", "Archive {n} task(s)?", { n: props.count }));
         },
         size: "sm",
-        title: "Archive selected tasks. They disappear from the default board view but remain in the database.",
+        title: uiText("Archive selected tasks. They disappear from the default board view but remain in the database.", "Переместить задачи в архив. Они исчезнут с доски, но останутся в базе данных."),
       }, tx(t, "archive", "Archive")),
       h(Button, {
         onClick: function () {
@@ -2551,10 +3277,10 @@
         },
         size: "sm",
         variant: "destructive",
-        title: "Permanently delete selected tasks. This cannot be undone.",
+        title: uiText("Permanently delete selected tasks. This cannot be undone.", "Удалить выбранные задачи без возможности восстановления."),
       }, tx(t, "delete", "Delete")),
       h("div", { className: "hermes-kanban-bulk-priority",
-                 title: "Set priority on selected tasks. Higher = claimed first." },
+                 title: uiText("Set priority on selected tasks. Higher = claimed first.", "Задать приоритет выбранным задачам. Задачи с высоким приоритетом берутся первыми.") },
         h(Input, {
           type: "number",
           value: priority,
@@ -2573,13 +3299,13 @@
         }, tx(t, "setPriority", "Set priority")),
       ),
       h("div", { className: "hermes-kanban-bulk-reassign",
-                 title: "Reassign selected tasks to a different Hermes profile. Pick a profile (or unassign) and click Apply." },
+                 title: uiText("Reassign selected tasks to a different Hermes profile. Pick a profile (or unassign) and click Apply.", "Назначить выбранные задачи другому профилю Hermes. Выберите профиль или снимите назначение и нажмите «Применить».") },
         h(Select, Object.assign({
           value: assignee,
           className: "h-7 text-xs",
         }, selectChangeHandler(setAssignee)),
-          h(SelectOption, { value: "" }, "— reassign —"),
-          h(SelectOption, { value: "__none__" }, "(unassign)"),
+          h(SelectOption, { value: "" }, uiText("— reassign —", "— переназначить —")),
+          h(SelectOption, { value: "__none__" }, uiText("(unassign)", "(снять назначение)")),
           props.assignees.map(function (a) {
             return h(SelectOption, { key: a, value: a }, a);
           }),
@@ -2592,26 +3318,26 @@
           },
           disabled: !assignee,
           size: "sm",
-          title: "Apply the selected assignee to all selected tasks.",
+          title: uiText("Apply the selected assignee to all selected tasks.", "Назначить выбранный профиль всем выбранным задачам."),
         }, tx(t, "apply", "Apply")),
       ),
-      h("label", { className: "hermes-kanban-bulk-reclaim-first", title: "Reclaim any active claims before reassigning" },
+      h("label", { className: "hermes-kanban-bulk-reclaim-first", title: uiText("Reclaim any active claims before reassigning", "Сначала вернуть активные задачи в очередь, затем переназначить") },
         h(Checkbox, {
           checked: reclaimFirst,
           onCheckedChange: function (checked) { setReclaimFirst(checked === true); },
         }),
-        "Reclaim first",
+        uiText("Reclaim first", "Сначала вернуть"),
       ),
       h("div", { className: "flex-1" }),
       h(Button, {
         onClick: props.onSelectAllVisible,
         size: "sm",
-        title: "Select all visible cards across columns.",
-      }, "Select all visible"),
+        title: uiText("Select all visible cards across columns.", "Выбрать все видимые карточки во всех колонках."),
+      }, uiText("Select all visible", "Выбрать все видимые")),
       h(Button, {
         onClick: props.onClear,
         size: "sm",
-        title: "Deselect all tasks and hide this bar.",
+        title: uiText("Deselect all tasks and hide this bar.", "Снять выделение со всех задач и скрыть панель."),
       }, tx(t, "clear", "Clear")),
     );
   }
@@ -2823,7 +3549,7 @@
   }
 
   function Column(props) {
-    const { t } = useI18n();
+    const { t, uiText, locale } = useI18n();
     const [dragOver, setDragOver] = useState(false);
     const [showCreate, setShowCreate] = useState(false);
     const colRef = useRef(null);
@@ -2894,8 +3620,8 @@
                  title: colHelp || "" },
         h(Checkbox, {
           className: "hermes-kanban-col-check",
-          title: "Select all tasks in this column",
-          "aria-label": `Select all tasks in ${colLabel || props.column.name}`,
+          title: uiText("Select all tasks in this column", "Выбрать все задачи в этой колонке"),
+          "aria-label": uiText(`Select all tasks in ${colLabel || props.column.name}`, `Выбрать все задачи в колонке «${colLabel || props.column.name}»`),
           checked: props.column.tasks.length > 0 && props.column.tasks.every(function (t) { return props.selectedIds.has(t.id); }),
           onCheckedChange: function () {
             if (props.selectAllInColumn) props.selectAllInColumn(props.column.name);
@@ -2906,7 +3632,9 @@
         h("span", { className: "hermes-kanban-column-label" },
           colLabel || props.column.name),
         h("span", { className: "hermes-kanban-column-count",
-                    title: `${props.column.tasks.length} task${props.column.tasks.length === 1 ? "" : "s"} in this column` },
+                    title: /^ru(?:[-_]|$)/i.test(locale)
+                      ? `${pluralRu(props.column.tasks.length, ["задача", "задачи", "задач"])} в колонке`
+                      : `${props.column.tasks.length} task${props.column.tasks.length === 1 ? "" : "s"} in this column` },
           props.column.tasks.length),
         h("button", {
           type: "button",
@@ -2934,12 +3662,13 @@
             ? lanes.map(function (lane) {
                 return h("div", { key: lane.assignee, className: "hermes-kanban-lane" },
                   h("div", { className: "hermes-kanban-lane-head" },
-                    h("span", { className: "hermes-kanban-lane-name" }, lane.assignee),
+                    h("span", { className: "hermes-kanban-lane-name" }, operatorRoleLabel(lane.assignee)),
                     h("span", { className: "hermes-kanban-lane-count" }, lane.tasks.length),
                   ),
                   lane.tasks.map(function (tk) {
                     return h(TaskCard, {
                       key: tk.id, task: tk,
+                      allTasks: props.allTasks,
                       selected: props.selectedIds.has(tk.id),
                       failed: props.failedIds && props.failedIds.has(tk.id),
                       draggingTaskId: props.draggingTaskId,
@@ -2954,6 +3683,7 @@
             : props.column.tasks.map(function (tk) {
                 return h(TaskCard, {
                   key: tk.id, task: tk,
+                      allTasks: props.allTasks,
                   selected: props.selectedIds.has(tk.id),
                   failed: props.failedIds && props.failedIds.has(tk.id),
                   draggingTaskId: props.draggingTaskId,
@@ -2993,7 +3723,7 @@
   }
 
   function TaskCard(props) {
-    const { t: i18n } = useI18n();
+    const { t: i18n, uiText, localizedTimeAgo, locale } = useI18n();
     const t = props.task;
     const cardRef = useRef(null);
 
@@ -3046,6 +3776,7 @@
 
     const progress = t.progress;
     const needsAssignee = t.status === "ready" && !t.assignee;
+    const state = operatorStatus(t, Object.assign({}, t._operatorContext || {}, { allTasks: props.allTasks || [], teamTask: t._team }));
 
     return h("div", {
       ref: cardRef,
@@ -3078,11 +3809,11 @@
                 checked: props.selected,
                 onCheckedChange: handleCheckedChange,
                 onClick: function (e) { e.stopPropagation(); },
-                "aria-label": `Select task ${t.id}`,
+                "aria-label": uiText(`Select task ${t.id}`, `Выбрать задачу ${t.id}`),
               }),
             ),
             h("span", { className: "hermes-kanban-card-id",
-                        title: `Task id: ${t.id}. Use this id with kanban_show, /kanban show, or hermes kanban show.` }, t.id),
+                        title: uiText(`Task id: ${t.id}. Use this id with kanban_show, /kanban show, or hermes kanban show.`, `ID задачи: ${t.id}. Используйте его с kanban_show, /kanban show или hermes kanban show.`) }, t.id),
             t.warnings && t.warnings.count > 0
               ? h("span", {
                   className: cn(
@@ -3093,18 +3824,18 @@
                     `${t.warnings.count} active diagnostic` +
                     (t.warnings.count === 1 ? "" : "s") +
                     ` (severity: ${t.warnings.highest_severity || "warning"}). ` +
-                    `Click to open for details.`
+                    uiText(`Click to open for details.`, `Нажмите, чтобы открыть подробности.`)
                   ),
                 }, t.warnings.highest_severity === "critical" ? "!!!" :
                    t.warnings.highest_severity === "error" ? "!!" : "⚠")
               : null,
             t.priority > 0
               ? h(Badge, { className: "hermes-kanban-priority",
-                           title: `Priority ${t.priority}. Higher-priority tasks are claimed first by the dispatcher.` }, `P${t.priority}`)
+                           title: uiText(`Priority ${t.priority}. Higher-priority tasks are claimed first by the dispatcher.`, `Приоритет ${t.priority}. Диспетчер сначала берёт задачи с более высоким приоритетом.`) }, `P${t.priority}`)
               : null,
             t.tenant
               ? h(Badge, { variant: "outline", className: "hermes-kanban-tag",
-                           title: `Tenant: ${t.tenant}. Free-form tag for grouping tasks (customer, project, team).` }, t.tenant)
+                           title: uiText(`Tenant: ${t.tenant}. Free-form tag for grouping tasks (customer, project, team).`, `Тенант: ${t.tenant}. Произвольная метка для группировки задач по клиенту, проекту или команде.`) }, t.tenant)
               : null,
             progress
               ? h("span", {
@@ -3123,29 +3854,39 @@
                 }, tx(i18n, "needsAssignee", "Needs assignee"))
               : null,
           ),
-          h("div", { className: "hermes-kanban-card-title" },
-            t.title || tx(i18n, "untitled", "(untitled)")),
+          h("div", { className: "hermes-kanban-card-title", title: t.title || "" },
+            compactTaskTitle(t.title || tx(i18n, "untitled", "(untitled)"))),
+          t.status === "blocked" || t.status === "ready" || t.status === "running"
+            ? h("div", { className: "hermes-kanban-card-state hermes-kanban-card-state--" + state.tone,
+                title: state.reason + " " + state.action },
+                h("strong", null, state.title),
+                t.status === "blocked" ? h("span", null, state.reason) : null)
+            : null,
           h("div", { className: "hermes-kanban-card-row hermes-kanban-card-meta" },
             t.assignee
               ? h("span", { className: "hermes-kanban-assignee",
-                            title: `Assigned to Hermes profile @${t.assignee}` }, "@", t.assignee)
+                            title: uiText(`Assigned to Hermes profile @${t.assignee}`, `Назначено профилю Hermes @${t.assignee}`) }, operatorRoleLabel(t.assignee))
               : h("span", { className: "hermes-kanban-unassigned",
                             title: needsAssignee
                               ? tx(i18n, "needsAssigneeHint", "Dependencies are satisfied, but the dispatcher skips this task until you assign a profile.")
-                              : "No profile assigned." },
+                              : uiText("No profile assigned.", "Профиль не назначен.") },
                   tx(i18n, "unassigned", "unassigned")),
             t.comment_count > 0
               ? h("span", { className: "hermes-kanban-count",
-                            title: `${t.comment_count} comment${t.comment_count === 1 ? "" : "s"} on this task` }, "💬 ", t.comment_count)
+                            title: /^ru(?:[-_]|$)/i.test(locale)
+                              ? `${pluralRu(t.comment_count, ["комментарий", "комментария", "комментариев"])} к задаче`
+                              : `${t.comment_count} comment${t.comment_count === 1 ? "" : "s"} on this task` }, "💬 ", t.comment_count)
               : null,
             t.link_counts && (t.link_counts.parents + t.link_counts.children) > 0
               ? h("span", { className: "hermes-kanban-count",
-                            title: `${t.link_counts.parents} parent${t.link_counts.parents === 1 ? "" : "s"}, ${t.link_counts.children} child${t.link_counts.children === 1 ? "" : "ren"}. Children stay blocked until their parent is done.` },
+                            title: /^ru(?:[-_]|$)/i.test(locale)
+                              ? `${pluralRu(t.link_counts.parents, ["родительская задача", "родительские задачи", "родительских задач"])}, ${pluralRu(t.link_counts.children, ["дочерняя задача", "дочерние задачи", "дочерних задач"])}. Дочерние задачи остаются заблокированными до завершения родительской.`
+                              : `${t.link_counts.parents} parent${t.link_counts.parents === 1 ? "" : "s"}, ${t.link_counts.children} child${t.link_counts.children === 1 ? "" : "ren"}. Children stay blocked until their parent is done.` },
                   "↔ ", t.link_counts.parents + t.link_counts.children)
               : null,
             h("span", { className: "hermes-kanban-ago",
-                        title: t.created_at ? `Created ${t.created_at}` : "" },
-              timeAgo ? timeAgo(t.created_at) : ""),
+                        title: t.created_at ? uiText(`Created ${t.created_at}`, `Создано ${t.created_at}`) : "" },
+              localizedTimeAgo(t.created_at)),
           ),
         ),
       ),
@@ -3162,7 +3903,7 @@
   // -------------------------------------------------------------------------
 
   function InlineCreate(props) {
-    const { t } = useI18n();
+    const { t, uiText } = useI18n();
     const [title, setTitle] = useState("");
     const [assignee, setAssignee] = useState("");
     const [priority, setPriority] = useState(0);
@@ -3275,8 +4016,8 @@
                   : tx(t, "assigneePlaceholder", "assignee"),
                 className: "h-8 text-sm",
                 title: props.columnName === "triage"
-                  ? "Hermes profile that will spec this task (default: the dispatcher's configured specifier). Leave blank to let the dispatcher pick."
-                  : "Hermes profile to assign. Leave blank and the dispatcher will pick from available profiles when the task is Ready.",
+                  ? uiText("Hermes profile that will spec this task (default: the dispatcher's configured specifier). Leave blank to let the dispatcher pick.", "Профиль Hermes, который подготовит спецификацию. Оставьте поле пустым, чтобы профиль выбрал диспетчер.")
+                  : uiText("Hermes profile to assign. Leave blank and the dispatcher will pick from available profiles when the task is Ready.", "Профиль Hermes для задачи. Оставьте поле пустым, чтобы диспетчер выбрал его, когда задача будет готова."),
                 style: { textTransform: "none" },
                 autoCapitalize: "none",
                 autoCorrect: "off",
@@ -3291,7 +4032,7 @@
                 onChange: function (e) { setPriority(e.target.value); },
                 placeholder: "pri",
                 className: "h-8 text-sm",
-                title: "Priority. Higher-priority tasks are claimed first by the dispatcher. 0 = default.",
+                title: uiText("Priority. Higher-priority tasks are claimed first by the dispatcher. 0 = default.", "Приоритет задачи. Диспетчер сначала берёт задачи с более высоким приоритетом. 0 — обычный."),
               }),
             ),
           ),
@@ -3303,7 +4044,7 @@
               onChange: function (e) { setSkills(e.target.value); },
               placeholder: tx(t, "skillsPlaceholder",
                 "skills (optional, comma-separated): translation, github-code-review"),
-              title: "Force-load these skills into the worker (in addition to the built-in kanban-worker).",
+              title: uiText("Force-load these skills into the worker (in addition to the built-in kanban-worker).", "Дополнительно загрузить эти навыки исполнителю вместе со встроенным kanban-worker."),
               className: "h-8 text-sm",
             }),
           ),
@@ -3312,7 +4053,7 @@
             h("div", { className: "flex gap-2" },
               h(Select, Object.assign({
                 value: workspaceKind,
-                title: "Choose whether task files are temporary or preserved after completion.",
+                title: uiText("Choose whether task files are temporary or preserved after completion.", "Выберите, удалять или сохранять файлы задачи после завершения."),
                 className: "h-8 text-sm flex-1",
               }, selectChangeHandler(setWorkspaceKind)),
                 h(SelectOption, { value: "scratch" },
@@ -3333,7 +4074,7 @@
               className: "text-xs text-destructive",
               role: "alert",
             }, tx(t, "workspaceScratchWarning",
-              "This workspace and any files left in it are deleted when the task completes.")) : null,
+              uiText("This workspace and any files left in it are deleted when the task completes.", "Рабочее пространство и оставшиеся файлы будут удалены после завершения задачи."))) : null,
           ),
           h("div", { className: "flex flex-col gap-1" },
             fieldLabel(tx(t, "parentLabel", "Parent task"),
@@ -3341,7 +4082,7 @@
             h(Select, Object.assign({
               value: parent,
               className: "h-8 text-sm",
-              title: "Optional parent task. A child stays blocked in its current column until the parent is marked done.",
+              title: uiText("Optional parent task. A child stays blocked in its current column until the parent is marked done.", "Необязательная родительская задача. Дочерняя останется заблокированной, пока родительская не будет завершена."),
             }, selectChangeHandler(setParent)),
               h(SelectOption, { value: "" }, tx(t, "noParent", "— no parent —")),
               (props.allTasks || []).map(function (task) {
@@ -3353,7 +4094,7 @@
           h("div", { className: "flex gap-2 items-center" },
             h("label", {
               className: "flex items-center gap-1.5 text-xs cursor-pointer select-none",
-              title: "Goal mode: the worker keeps going in the same session until a judge agrees the card is done (or the turn budget runs out, which blocks it for review). Best for open-ended cards one shot rarely finishes.",
+              title: uiText("Goal mode: the worker keeps going in the same session until a judge agrees the card is done (or the turn budget runs out, which blocks it for review). Best for open-ended cards one shot rarely finishes.", "Режим цели: исполнитель работает в одной сессии, пока судья не подтвердит завершение. При исчерпании лимита ходов задача блокируется для проверки. Подходит для больших задач, которые не решить за один запуск."),
             },
               h("input", {
                 type: "checkbox",
@@ -3369,7 +4110,7 @@
               onChange: function (e) { setGoalMaxTurns(e.target.value); },
               placeholder: tx(t, "goalMaxTurns", "max turns (default 20)"),
               className: "h-8 text-sm w-44",
-              title: "Turn budget for the goal loop. Blank = backend default (20).",
+              title: uiText("Turn budget for the goal loop. Blank = backend default (20).", "Лимит ходов в режиме цели. Пустое значение — значение по умолчанию (20)."),
               min: 1,
             }) : null,
           ),
@@ -3518,7 +4259,7 @@
       if (opts && opts.confirm && props.requestDialog) {
         return props.requestDialog({
           kind: "confirm",
-          title: opts.confirmTitle || tx(t, "confirmTitle", "Confirm change"),
+              title: opts.confirmTitle || tx(t, "confirmTitle", "Confirm change"),
           description: opts.confirm,
           confirmLabel: opts.confirmLabel || tx(t, "common.confirm", "Confirm"),
           destructive: !!opts.destructive,
@@ -3678,7 +4419,6 @@
         onClick: function (e) { e.stopPropagation(); },
       },
         h("div", { className: "hermes-kanban-drawer-head" },
-          h("span", { className: "text-xs text-muted-foreground" }, props.taskId),
           h("button", {
             type: "button",
             onClick: props.onClose,
@@ -3691,6 +4431,7 @@
         err ? h("div", { className: "p-4 text-sm text-destructive" }, err) :
         data ? h(TaskDetail, {
           data, editing, setEditing,
+          teamTask: props.teamTask,
           renderMarkdown: props.renderMarkdown,
           allTasks: props.allTasks,
           assignees: props.assignees || [],
@@ -3722,9 +4463,7 @@
             title: tx(t, "commentHintTitle",
               "Comments are the channel for talking to a task's worker. They land on the thread immediately — no need to block the task first. A running worker picks the thread up on its next kanban_show() or respawn; blocking is only for when you want the worker to STOP and wait for your input."),
           },
-            "ⓘ ",
-            tx(t, "commentHint",
-              "Comments reach the worker on its next run or kanban_show() — no need to block the task first."),
+            "Комментарий будет доступен исполнителю при следующем обращении к задаче.",
           ),
           h("div", { className: "hermes-kanban-drawer-comment-row" },
             h(Input, {
@@ -3867,13 +4606,80 @@
   }
 
   function TaskDetail(props) {
-    const { t: i18n } = useI18n();
+    const { t: i18n, localizedTimeAgo, uiText } = useI18n();
     const t = props.data.task;
-    const comments = props.data.comments || [];
+    const allComments = props.data.comments || [];
+    const isServiceComment = function (comment) {
+      return comment.author === "team-controller" && /^(?:Назначение по доступному лимиту:|Ожидание ресурса подписки:)/.test(comment.body || "");
+    };
+    const comments = allComments.filter(function (comment) { return !isServiceComment(comment); });
+    const serviceComments = allComments.filter(isServiceComment);
     const events = props.data.events || [];
     const attachments = props.data.attachments || [];
     const links = props.data.links || { parents: [], children: [] };
-    const childResults = props.data.child_results || [];
+    const childResults = (props.data.child_results || []).filter(function (child) { return child.result || child.latest_summary; });
+    const operatorContext = {
+      comments: comments,
+      events: events,
+      runs: props.data.runs || [],
+      links: links,
+      allTasks: props.allTasks || [],
+      diagnostics: t.diagnostics || props.data.diagnostics || [],
+      teamTask: props.teamTask || null,
+    };
+    const operatorState = typeof operatorStatus === "function"
+      ? operatorStatus(t, operatorContext)
+      : null;
+    const compactTitle = typeof compactTaskTitle === "function"
+      ? compactTaskTitle(t.title || "")
+      : (t.title || tx(i18n, "untitled", "(untitled)"));
+    const drawerText = function (en, ru) { return uiText ? uiText(en, ru) : en; };
+    const assigneeLabel = t.assignee
+      ? (typeof operatorRoleLabel === "function" ? operatorRoleLabel(t.assignee) : t.assignee)
+      : drawerText("Unassigned", "Не назначен");
+
+    function plainPreview(source, limit) {
+      const plain = String(source || "")
+        .replace(/```[\s\S]*?```/g, " фрагмент кода ")
+        .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
+        .replace(/[`*_>#~|]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (plain.length <= limit) return plain;
+      return plain.slice(0, Math.max(0, limit - 1)).trimEnd() + "…";
+    }
+
+    function reportBlock(label, source, key) {
+      if (!source) return null;
+      if (String(source).length <= 700) {
+        return h(MarkdownBlock, { source: source, enabled: props.renderMarkdown });
+      }
+      return h("div", { key: key, className: "hermes-kanban-long-report" },
+        h("p", { className: "hermes-kanban-long-report__preview" }, plainPreview(source, 220)),
+        disclosure(label,
+          h(MarkdownBlock, { source: source, enabled: props.renderMarkdown }),
+        ),
+      );
+    }
+
+    function renderComment(c) {
+      return h("div", { key: c.id, className: "hermes-kanban-comment" },
+        h("div", { className: "hermes-kanban-comment-head" },
+          h("span", { className: "hermes-kanban-comment-author" }, c.author || "anon"),
+          h("span", { className: "hermes-kanban-comment-ago" }, localizedTimeAgo(c.created_at)),
+        ),
+        reportBlock(drawerText("Full comment", "Полный комментарий"), c.body, c.id),
+      );
+    }
+
+    function disclosure(label, content, className) {
+      return h("details", {
+        className: cn("hermes-kanban-disclosure", className || ""),
+      },
+        h("summary", { className: "hermes-kanban-detail-heading" }, label),
+        content,
+      );
+    }
 
     return h("div", { className: "hermes-kanban-drawer-body" },
       h("div", { className: "hermes-kanban-drawer-title" },
@@ -3888,63 +4694,30 @@
             })
           : h("span", {
               className: "hermes-kanban-drawer-title-text",
-              title: tx(i18n, "clickToEdit", "Click to edit"),
+              title: `${t.title || ""}\n${tx(i18n, "clickToEdit", "Click to edit")}`,
               onClick: function () { props.setEditing(true); },
-            }, t.title || tx(i18n, "untitled", "(untitled)")),
+            }, compactTitle),
       ),
-      h("div", { className: "hermes-kanban-drawer-meta" },
-        h(MetaRow, { label: tx(i18n, "status", "Status"), value: t.status }),
-        h(AssigneeEditor, { task: t, onPatch: props.onPatch }),
-        h(PriorityEditor, { task: t, onPatch: props.onPatch }),
-        h(ModelEditor, { task: t, onPatch: props.onPatch }),
-        t.tenant ? h(MetaRow, { label: tx(i18n, "tenant", "Tenant"), value: t.tenant }) : null,
-        h(MetaRow, {
-          label: tx(i18n, "workspace", "Workspace"),
-          value: `${t.workspace_kind}${t.workspace_path ? ": " + t.workspace_path : ""}`,
-        }),
-        (t.skills && t.skills.length > 0) ? h(MetaRow, {
-          label: tx(i18n, "skills", "Skills"),
-          value: t.skills.join(", "),
-        }) : null,
-        t.goal_mode ? h(MetaRow, {
-          label: tx(i18n, "goalMode", "Goal mode"),
-          value: t.goal_max_turns
-            ? `on (max ${t.goal_max_turns} turns)`
-            : "on",
-        }) : null,
-        t.created_by ? h(MetaRow, { label: tx(i18n, "createdBy", "Created by"), value: t.created_by }) : null,
+      h("div", { className: "hermes-kanban-detail-assignee" },
+        h("span", { className: "hermes-kanban-detail-assignee__label" }, drawerText("Assignee", "Исполнитель")),
+        h("span", { className: "hermes-kanban-detail-assignee__value" }, assigneeLabel),
+        props.teamTask && props.teamTask.request_id ? h("a", {
+          href: "/engineering-team?request=" + encodeURIComponent(props.teamTask.request_id),
+          className: "hermes-kanban-request-link",
+        }, "Открыть запрос команды") : null,
       ),
-      h(StatusActions, {
-        task: t,
-        onPatch: props.onPatch,
-        onSpecify: props.onSpecify,
-        onDecompose: props.onDecompose,
-      }),
-      h(DiagnosticsSection, {
-        task: t,
-        boardSlug: props.boardSlug,
-        assignees: props.assignees,
-        diagnostics: t.diagnostics || [],
-        onRefresh: props.onRefresh,
-      }),
-      h(HomeSubsSection, {
-        homeChannels: props.homeChannels || [],
-        homeBusy: props.homeBusy || {},
-        onToggle: props.onToggleHomeSub,
-      }),
-      h(BodyEditor, {
-        task: t,
-        renderMarkdown: props.renderMarkdown,
-        onPatch: props.onPatch,
-      }),
-      h(DependencyEditor, {
-        task: t,
-        links, allTasks: props.allTasks,
-        onAddParent: props.onAddParent,
-        onRemoveParent: props.onRemoveParent,
-        onAddChild: props.onAddChild,
-        onRemoveChild: props.onRemoveChild,
-      }),
+      operatorState ? h("section", {
+        className: cn("hermes-kanban-operator-status", "hermes-kanban-operator-status--" + (operatorState.tone || "neutral")),
+        "aria-label": drawerText("Current status", "Текущий статус"),
+      },
+        h("h3", { className: "hermes-kanban-operator-status__title" }, operatorState.title),
+        operatorState.reason ? h("p", { className: "hermes-kanban-operator-status__reason" }, operatorState.reason) : null,
+        operatorState.action ? h("p", { className: "hermes-kanban-operator-status__action" }, operatorState.action) : null,
+        operatorState.href ? h("a", {
+          className: "hermes-kanban-operator-status__link",
+          href: operatorState.href,
+        }, operatorState.linkLabel || drawerText("Open request", "Открыть запрос")) : null,
+      ) : null,
       (function () {
         var finalResult = t.result || t.latest_summary || null;
         var isDone = t.status === "done";
@@ -3955,7 +4728,7 @@
             : tx(i18n, "finalResult", "Final Result (run summary)");
           return h("div", { className: "hermes-kanban-section" },
             h("div", { className: "hermes-kanban-section-head" }, label),
-            h(MarkdownBlock, { source: finalResult, enabled: props.renderMarkdown }),
+            reportBlock(drawerText("Full report", "Полный отчёт"), finalResult, "task-result"),
           );
         }
         if (isDone && isParent) {
@@ -3978,7 +4751,7 @@
         }
         return null;
       })(),
-      childResults.length > 0 ? h("div", { className: "hermes-kanban-section" },
+      childResults.length > 0 ? disclosure(`Результаты связанных задач (${childResults.length})`, h("div", { className: "hermes-kanban-section" },
         h("div", { className: "hermes-kanban-section-head" },
           `${tx(i18n, "childResults", "Child Results")} (${childResults.length})`),
         childResults.map(function (child) {
@@ -3986,8 +4759,8 @@
           return h("div", { key: child.id, className: "hermes-kanban-comment" },
             h("div", { className: "hermes-kanban-comment-head" },
               h("span", { className: "hermes-kanban-comment-author" },
-                `${child.id} · ${child.title || tx(i18n, "untitled", "(untitled)")}`),
-              h(Badge, { variant: "outline" }, child.status),
+                compactTaskTitle(child.title || tx(i18n, "untitled", "(untitled)"))),
+              h(Badge, { variant: "outline" }, getColumnLabel(i18n, child.status)),
               h("button", {
                 type: "button",
                 className: "hermes-kanban-diag-action-btn",
@@ -3995,12 +4768,12 @@
               }, tx(i18n, "open", "Open")),
             ),
             childResult
-              ? h(MarkdownBlock, { source: childResult, enabled: props.renderMarkdown })
+              ? reportBlock(drawerText("Full report", "Полный отчёт"), childResult, child.id + "-result")
               : h("div", { className: "text-xs text-muted-foreground" },
                   tx(i18n, "noChildResult", "No result recorded yet.")),
           );
         }),
-      ) : null,
+      )) : null,
       h(AttachmentsSection, {
         attachments: attachments,
         boardSlug: props.boardSlug,
@@ -4017,64 +4790,120 @@
         comments.length === 0
           ? h("div", { className: "text-xs text-muted-foreground" },
               tx(i18n, "noComments", "— no comments —"))
-          : comments.map(function (c) {
-              return h("div", { key: c.id, className: "hermes-kanban-comment" },
-                h("div", { className: "hermes-kanban-comment-head" },
-                  h("span", { className: "hermes-kanban-comment-author" }, c.author || "anon"),
-                  h("span", { className: "hermes-kanban-comment-ago" },
-                    timeAgo ? timeAgo(c.created_at) : ""),
-                ),
-                h(MarkdownBlock, { source: c.body, enabled: props.renderMarkdown }),
-              );
-            }),
+          : comments.slice(-3).map(renderComment),
       ),
-      h("div", { className: "hermes-kanban-section" },
-        h("div", { className: "hermes-kanban-section-head" },
-          `${tx(i18n, "events", "Events")} (${events.length})`),
-        events.slice().reverse().slice(0, 20).map(function (e) {
-          const isDiag = isDiagnosticEvent(e.kind);
-          const phantoms = isDiag ? phantomIdsFromEvent(e) : [];
-          return h("div", {
-            key: e.id,
-            className: cn(
-              "hermes-kanban-event",
-              isDiag ? "hermes-kanban-event--hallucination" : "",
+      comments.length > 3 ? disclosure(
+        drawerText(`Older comments (${comments.length - 3})`, `Предыдущие комментарии (${comments.length - 3})`),
+        comments.slice(0, -3).map(renderComment),
+      ) : null,
+      disclosure(drawerText("Technical details", "Технические подробности"),
+        h(React.Fragment, null,
+          disclosure(drawerText("Task details", "Данные задачи"),
+            h("div", { className: "hermes-kanban-drawer-meta" },
+              h(MetaRow, { label: drawerText("Task ID", "ID задачи"), value: t.id }),
+              h(MetaRow, { label: tx(i18n, "status", "Status"), value: getColumnLabel(i18n, t.status) }),
+              h(AssigneeEditor, { task: t, onPatch: props.onPatch }),
+              h(PriorityEditor, { task: t, onPatch: props.onPatch }),
+              h(ModelEditor, { task: t, onPatch: props.onPatch }),
+              t.tenant ? h(MetaRow, { label: tx(i18n, "tenant", "Tenant"), value: t.tenant }) : null,
+              h(MetaRow, {
+                label: tx(i18n, "workspace", "Workspace"),
+                value: `${t.workspace_kind}${t.workspace_path ? ": " + t.workspace_path : ""}`,
+              }),
+              (t.skills && t.skills.length > 0) ? h(MetaRow, {
+                label: tx(i18n, "skills", "Skills"),
+                value: t.skills.join(", "),
+              }) : null,
+              t.goal_mode ? h(MetaRow, {
+                label: tx(i18n, "goalMode", "Goal mode"),
+                value: t.goal_max_turns ? `on (max ${t.goal_max_turns} turns)` : "on",
+              }) : null,
+              t.created_by ? h(MetaRow, { label: tx(i18n, "createdBy", "Created by"), value: t.created_by }) : null,
             ),
-          },
-            isDiag
-              ? h("div", { className: "hermes-kanban-event-header" },
-                  h("span", { className: "hermes-kanban-event-warning-icon" }, "⚠"),
-                  h("span", { className: "hermes-kanban-event-warning-label" },
-                    getDiagnosticEventLabel(i18n, e.kind) || e.kind),
-                  h("span", { className: "hermes-kanban-event-ago" },
-                    timeAgo ? timeAgo(e.created_at) : ""),
-                )
-              : h("div", { className: "hermes-kanban-event-header-plain" },
-                  h("span", { className: "hermes-kanban-event-kind" }, e.kind),
-                  h("span", { className: "hermes-kanban-event-ago" },
-                    timeAgo ? timeAgo(e.created_at) : ""),
-                ),
-            isDiag && phantoms.length > 0
-              ? h("div", { className: "hermes-kanban-event-phantom-row" },
-                  h("span", { className: "hermes-kanban-event-phantom-label" },
-                    tx(i18n, "phantomIds", "Phantom ids:")),
-                  phantoms.map(function (pid) {
-                    return h("code", {
-                      key: pid,
-                      className: "hermes-kanban-event-phantom-chip",
-                    }, pid);
-                  }),
-                )
-              : null,
-            e.payload && !isDiag
-              ? h("code", { className: "hermes-kanban-event-payload" },
-                  JSON.stringify(e.payload))
-              : null,
-          );
-        }),
+          ),
+          disclosure(drawerText("Task management", "Управление задачей"),
+            h(StatusActions, {
+              task: t,
+              onPatch: props.onPatch,
+              onSpecify: props.onSpecify,
+              onDecompose: props.onDecompose,
+            }),
+          ),
+          disclosure(drawerText("Agent instructions", "Инструкция агенту"),
+            h(BodyEditor, {
+              task: t,
+              renderMarkdown: props.renderMarkdown,
+              onPatch: props.onPatch,
+            }),
+          ),
+          disclosure(drawerText("Links and dependencies", "Связи и зависимости"),
+            h(DependencyEditor, {
+              task: t,
+              links: links,
+              allTasks: props.allTasks,
+              onAddParent: props.onAddParent,
+              onRemoveParent: props.onRemoveParent,
+              onAddChild: props.onAddChild,
+              onRemoveChild: props.onRemoveChild,
+            }),
+          ),
+          (t.diagnostics || []).length > 0 ? disclosure(drawerText("Diagnostics", "Диагностика"),
+            h(DiagnosticsSection, {
+              task: t,
+              boardSlug: props.boardSlug,
+              assignees: props.assignees,
+              diagnostics: t.diagnostics || [],
+              onRefresh: props.onRefresh,
+            }),
+          ) : null,
+          (props.homeChannels || []).length > 0 ? disclosure(drawerText("Notifications", "Уведомления"),
+            h(HomeSubsSection, {
+              homeChannels: props.homeChannels || [],
+              homeBusy: props.homeBusy || {},
+              onToggle: props.onToggleHomeSub,
+            }),
+          ) : null,
+          serviceComments.length > 0 ? disclosure(`Служебные сообщения (${serviceComments.length})`,
+            serviceComments.map(renderComment),
+          ) : null,
+          disclosure(`${drawerText("Events", "События")} (${events.length})`,
+            h("div", { className: "hermes-kanban-section" },
+              events.slice().reverse().slice(0, 20).map(function (e) {
+                const isDiag = isDiagnosticEvent(e.kind);
+                const phantoms = isDiag ? phantomIdsFromEvent(e) : [];
+                return h("div", {
+                  key: e.id,
+                  className: cn("hermes-kanban-event", isDiag ? "hermes-kanban-event--hallucination" : ""),
+                },
+                  isDiag
+                    ? h("div", { className: "hermes-kanban-event-header" },
+                        h("span", { className: "hermes-kanban-event-warning-icon" }, "⚠"),
+                        h("span", { className: "hermes-kanban-event-warning-label" }, getDiagnosticEventLabel(i18n, e.kind) || e.kind),
+                        h("span", { className: "hermes-kanban-event-ago" }, localizedTimeAgo(e.created_at)),
+                      )
+                    : h("div", { className: "hermes-kanban-event-header-plain" },
+                        h("span", { className: "hermes-kanban-event-kind" }, e.kind),
+                        h("span", { className: "hermes-kanban-event-ago" }, localizedTimeAgo(e.created_at)),
+                      ),
+                  isDiag && phantoms.length > 0 ? h("div", { className: "hermes-kanban-event-phantom-row" },
+                    h("span", { className: "hermes-kanban-event-phantom-label" }, tx(i18n, "phantomIds", "Phantom ids:")),
+                    phantoms.map(function (pid) {
+                      return h("code", { key: pid, className: "hermes-kanban-event-phantom-chip" }, pid);
+                    }),
+                  ) : null,
+                  e.payload && !isDiag ? h("code", { className: "hermes-kanban-event-payload" }, JSON.stringify(e.payload)) : null,
+                );
+              }),
+            ),
+          ),
+          disclosure(drawerText("Technical details", "Логи и запуски"),
+            h(React.Fragment, null,
+              h(WorkerLogSection, { taskId: t.id, boardSlug: props.boardSlug }),
+              h(RunHistorySection, { runs: props.data.runs || [] }),
+            ),
+          ),
+        ),
       ),
-      h(WorkerLogSection, { taskId: t.id, boardSlug: props.boardSlug }),
-      h(RunHistorySection, { runs: props.data.runs || [] }),
     );
   }
 
@@ -4082,7 +4911,7 @@
   // active run if any. Each row shows profile / outcome / elapsed /
   // summary. Collapsed by default when there are more than three runs.
   function RunHistorySection(props) {
-    const { t } = useI18n();
+    const { t, uiText, localizedTimeAgo } = useI18n();
     const runs = props.runs || [];
     const [expanded, setExpanded] = useState(false);
     if (runs.length === 0) return null;
@@ -4123,7 +4952,7 @@
               r.profile ? `@${r.profile}` : tx(t, "noProfile", "(no profile)")),
             h("span", { className: "hermes-kanban-run-elapsed" }, fmtElapsed(r)),
             h("span", { className: "hermes-kanban-run-ago" },
-              timeAgo ? timeAgo(r.started_at) : ""),
+              localizedTimeAgo(r.started_at)),
           ),
           r.summary
             ? h("div", { className: "hermes-kanban-run-summary" }, r.summary)
@@ -4139,7 +4968,7 @@
                     className: "hermes-kanban-run-meta-block",
                     open: !collapsed,
                   },
-                  h("summary", { className: "hermes-kanban-run-meta-label" }, "Metadata"),
+                  h("summary", { className: "hermes-kanban-run-meta-label" }, uiText("Metadata", "Метаданные")),
                   h("code", { className: "hermes-kanban-run-meta" }, json),
                 );
               })()
@@ -4151,7 +4980,7 @@
 
   // Worker log: loads lazily (one GET on mount), refresh button, tail cap.
   function WorkerLogSection(props) {
-    const { t } = useI18n();
+    const { t, uiText } = useI18n();
     const [state, setState] = useState({ loading: false, data: null, err: null });
     const load = useCallback(function () {
       setState({ loading: true, data: null, err: null });
@@ -4188,7 +5017,7 @@
           type: "button",
           onClick: load,
           className: "hermes-kanban-edit-link",
-          title: "Refresh log",
+              title: uiText("Refresh log", "Обновить журнал"),
         }, "refresh"),
       ),
       body,
@@ -4472,7 +5301,7 @@
   }
 
   function BodyEditor(props) {
-    const { t } = useI18n();
+    const { t, uiText } = useI18n();
     const [editing, setEditing] = useState(false);
     const [v, setV] = useState(props.task.body || "");
     useEffect(function () { setV(props.task.body || ""); }, [props.task.body]);
@@ -4495,7 +5324,7 @@
               type: "button",
               onClick: function () { setEditing(true); },
               className: "hermes-kanban-edit-link",
-              title: "Edit description",
+              title: uiText("Edit description", "Изменить описание"),
             }, tx(t, "edit", "edit")),
       ),
       editing
@@ -4608,7 +5437,7 @@
   }
 
   function StatusActions(props) {
-    const { t } = useI18n();
+    const { t, uiText } = useI18n();
     const task = props.task;
     const [specifyBusy, setSpecifyBusy] = useState(false);
     const [specifyMsg, setSpecifyMsg] = useState(null);
@@ -4637,17 +5466,17 @@
                 const suffix = res.new_title
                   ? ` — retitled: ${res.new_title}`
                   : "";
-                setSpecifyMsg({ ok: true, text: `Specified${suffix}` });
+                setSpecifyMsg({ ok: true, text: uiText(`Specified${suffix}`, `Спецификация подготовлена${res.new_title ? ` — новое название: ${res.new_title}` : ""}`) });
               } else {
                 setSpecifyMsg({
                   ok: false,
-                  text: "Specify failed: " + ((res && res.reason) || "unknown error"),
+                  text: uiText("Specify failed: ", "Не удалось подготовить спецификацию: ") + ((res && res.reason) || "unknown error"),
                 });
               }
             }).catch(function (err) {
               setSpecifyMsg({
                 ok: false,
-                text: "Specify failed: " + (err.message || String(err)),
+                text: uiText("Specify failed: ", "Не удалось подготовить спецификацию: ") + (err.message || String(err)),
               });
             }).then(function () {
               setSpecifyBusy(false);
@@ -4655,7 +5484,7 @@
           },
           disabled: specifyBusy,
           size: "sm",
-        }, specifyBusy ? "Specifying…" : "✨ Specify")
+        }, specifyBusy ? uiText("Specifying…", "Подготовка…") : "✨ " + uiText("Specify", "Подготовить спецификацию"))
       : null;
 
     // "Decompose" is the built-in decomposer fan-out. Like Specify, only
@@ -4674,7 +5503,7 @@
                 if (res.fanout && res.child_ids && res.child_ids.length) {
                   setDecomposeMsg({
                     ok: true,
-                    text: `Decomposed into ${res.child_ids.length} children: ${res.child_ids.join(", ")}`,
+                    text: uiText(`Decomposed into ${res.child_ids.length} children: ${res.child_ids.join(", ")}`, `Создано дочерних задач: ${res.child_ids.length} (${res.child_ids.join(", ")})`),
                   });
                 } else {
                   const suffix = res.new_title
@@ -4682,19 +5511,19 @@
                     : "";
                   setDecomposeMsg({
                     ok: true,
-                    text: `Single task (no fanout)${suffix}`,
+                    text: uiText(`Single task (no fanout)${suffix}`, `Создана одна задача без разбиения${res.new_title ? ` — новое название: ${res.new_title}` : ""}`),
                   });
                 }
               } else {
                 setDecomposeMsg({
                   ok: false,
-                  text: "Decompose failed: " + ((res && res.reason) || "unknown error"),
+                  text: uiText("Decompose failed: ", "Не удалось декомпозировать задачу: ") + ((res && res.reason) || "unknown error"),
                 });
               }
             }).catch(function (err) {
               setDecomposeMsg({
                 ok: false,
-                text: "Decompose failed: " + (err.message || String(err)),
+                text: uiText("Decompose failed: ", "Не удалось декомпозировать задачу: ") + (err.message || String(err)),
               });
             }).then(function () {
               setDecomposeBusy(false);
@@ -4702,15 +5531,15 @@
           },
           disabled: decomposeBusy,
           size: "sm",
-        }, decomposeBusy ? "Decomposing…" : "⚗ Decompose")
+        }, decomposeBusy ? uiText("Decomposing…", "Декомпозиция…") : "⚗ " + uiText("Decompose", "Разложить на подзадачи"))
       : null;
 
     return h("div", null,
       h("div", { className: "hermes-kanban-actions" },
         specifyButton,
         decomposeButton,
-        b("→ triage",  { status: "triage" },   task.status !== "triage"),
-        b("→ ready",   { status: "ready" },    task.status !== "ready"),
+        b("→ " + getColumnLabel(t, "triage"), { status: "triage" }, task.status !== "triage"),
+        b("→ " + getColumnLabel(t, "ready"), { status: "ready" }, task.status !== "ready"),
         // No direct → running button: /tasks/:id PATCH rejects status=running
         // with 400 (issue #19535). Tasks enter running only through the
         // dispatcher's claim_task path, which atomically creates the run row,

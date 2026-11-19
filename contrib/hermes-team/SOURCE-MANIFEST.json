@@ -1,0 +1,1127 @@
+{
+  "schema_version": 1,
+  "export_date": "2026-11-19",
+  "upstream": "https://github.com/NousResearch/hermes-agent",
+  "base_commit": "5cc1369fa298021f8c740de154ff8c37c30bdcc8",
+  "branch": "codex/engineering-team-flow",
+  "core_files": [
+    {
+      "path": "agent/account_usage.py",
+      "sha256": "4409c11c6c9b12afe9a3902e75f6b5e2a5f0b0cdaf155a49e5a9e3aff31efc43",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "agent/credential_pool.py",
+      "sha256": "31e4f619cda3aee58f948e433498ce521f1b6cdea3b67dd92f068bd87e744b2c",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "agent/turn_context.py",
+      "sha256": "3e0d03ce91b2793bd6f4ef4379bc9f9259fc1aeabd2cabf04de46b488d85c325",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "agent/turn_finalizer.py",
+      "sha256": "2c80348e5dbc7ed57f65cfb3a429b36efbf4a71be3ab3026891a71c27af3bee6",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "hermes_cli/auth.py",
+      "sha256": "ef66e505d0cd57be3e165ff39eaf201d168113cbc296d3bd784fa236ecc295bd",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "hermes_cli/kanban_db.py",
+      "sha256": "22522a56bfc178c33402310ccabe5fd68d8bcdfbda9a77bfbbcb34a8ee491fc9",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "hermes_cli/kanban_decompose.py",
+      "sha256": "67bc01a3a743b9f088a2cbd843d31e6f8bfe25b1e63283ace4751da8a60526d5",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "plugins/hermes-achievements/dashboard/dist/index.js",
+      "sha256": "c8d471e689d6177d133767f584901b2156ae1d7a5732054c5af01bac861e9c8d",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "plugins/kanban/dashboard/dist/index.js",
+      "sha256": "4aac0b827c7179c677e138e6e6e20e6030635162bd8ad451236e14a22917aaee",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "plugins/kanban/dashboard/dist/style.css",
+      "sha256": "e10631ff855172158362a5b9212c129ff8f6f28635f36233bf35d84866abade4",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/App.tsx",
+      "sha256": "daacbe9e45c7f327f3742bf6f4f1ad935f7987e711e485b60371be9943372d7d",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/components/AuthWidget.tsx",
+      "sha256": "37687e26c10889b2b6b2ea91fe16528517fe69edd36897a257d8c237ea39fa53",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/components/AutomationBlueprints.tsx",
+      "sha256": "58f45f173e4ad7ea4c3f8708a8c9e714aa8307791912a4e58811b4f1560998ad",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/components/ChatSessionList.tsx",
+      "sha256": "4645915e99d5cb97e2b516a861b9f17c75a07eb0eaed052c8a60109cfd4df607",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/components/ChatSidebar.tsx",
+      "sha256": "d36c8180b2035b48e5d2857993e5a1893a8ff3dfd97aface2938a366731641f4",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/components/HermesConsoleModal.tsx",
+      "sha256": "10f47156c60d4d7c554b8dee5b7b03e7246906e39525125d994d7f93dfd94157",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/components/LanguageSwitcher.tsx",
+      "sha256": "118271eacef3a7fcea076d03b359bb0def8e4b803486194131aa277465d6fec3",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/components/ModelInfoCard.tsx",
+      "sha256": "7254c6dcc1f1226cbfed651b2b104f8dd29e42ac706cf975ab726c83619a327c",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/components/ModelPickerDialog.tsx",
+      "sha256": "1c566a616c07c7d6e5487e453ab2c4472b3b502e36f0852d1a8efbdfed4aa3fb",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/components/ModelReloadConfirm.tsx",
+      "sha256": "92df28b62070ca65a5a267fe6d1eadbdc0bdce721f0c1ff84cce4bcc4d2b78b4",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/components/PlatformsCard.tsx",
+      "sha256": "af3baf5d1530f7ca3ab3a84685f67cb66fb7a33e3148acb54eda852a7c3f90b3",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/components/ProfileSwitcher.tsx",
+      "sha256": "e61ccf19d747faa1eb499d24623921e06f2d640217b139914037a3654c786c75",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/components/ReasoningPicker.tsx",
+      "sha256": "0cb28396a81f5629f466d83b76d5d67ef0bae20b336de283a61a9252a3595d61",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/components/SkillEditorDialog.tsx",
+      "sha256": "ca42d60cdce1ce4f97803a2ffa2777a3fb38d182e194bd151680a6a517d250ea",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/components/ToolsetConfigDrawer.tsx",
+      "sha256": "4f5c39fa0018dc9de468fde3c3e074c5b226eedf03499cf500e78f63bfb697a8",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/i18n/component-copy.ts",
+      "sha256": "776b317b7f3736b47fd1427d3191473b601da51661f0956e84b9c51bc4a84529",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/i18n/en.ts",
+      "sha256": "d34441767dbda9632495f165dce0c8ddae5e61c1212172a45490e1eef9c4c7ce",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/i18n/extended-pages.ts",
+      "sha256": "22d33237a6ba0937fe0849f40d7152f0e252a32560f67be62d0c62ff687b2d53",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/i18n/general-pages.ts",
+      "sha256": "703641e2584838b621ed62c2e36b0a34650496cf2c0bd60039da67673364ef32",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/i18n/operations-pages.ts",
+      "sha256": "6b7412b43d48a7a7191f856fc39bceb71eb237a72c971e5e7934998ba6d0f607",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/i18n/ru.ts",
+      "sha256": "60106d8d17da20d7f4f9d3c92f379f1b8549b556f038abf8c5083541069646f2",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/i18n/types.ts",
+      "sha256": "509b9eb8d3b5e42c9898aff3e2e55bdc27d4e0df15a59d6c8cb80c97f35a815f",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/lib/resolve-page-title.ts",
+      "sha256": "87199987a6e76a924cfca739ff3eaff80b2137eab7b5cd01585d10647fb96eae",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/lib/utils.ts",
+      "sha256": "5dceb77b53325d305064e572f06765d1b02326210eda1b52f79e083e49dba159",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/pages/AnalyticsPage.tsx",
+      "sha256": "df3ccbc1a2b1c15029f84eccc129a94209c6c4b6a4c3dc4412d7c9a42edea9bc",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/pages/ChannelsPage.tsx",
+      "sha256": "588a8d8d69e116b10eba2ee3c4e4676084a17dae3d0685fcc529156d110f6e71",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/pages/ChatPage.tsx",
+      "sha256": "6d0ac473c7513ee861a72ca5515814cdb461f49b7d6856fb3b1cba91d03c3f7d",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/pages/ConfigPage.tsx",
+      "sha256": "a9a158a78dee136a4e0d00b220fc7e9d8376f6b84586e2c4a67d4b3ab0ae5461",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/pages/CronPage.tsx",
+      "sha256": "c04c732ec215fba706e26c4d239ffe5301c2dce41a74d53f8439d7826adc57cf",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/pages/EnvPage.tsx",
+      "sha256": "568fd6a42407d810b4f9855939aed69c8f5e3495f950db036ae83934097d7995",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/pages/FilesPage.tsx",
+      "sha256": "007fd9be5573828d3cde80ffbf873bbc426c68ccb39d8070b657af2543bda69b",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/pages/LogsPage.tsx",
+      "sha256": "4926f606c7933060cd292741029eb3b54954952039f808d9da8acc749387d219",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/pages/McpPage.tsx",
+      "sha256": "5e0778af2dc8096e556ba57812e9b80ea6f9019730a21eb6c44a596ac386f6ae",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/pages/ModelsPage.tsx",
+      "sha256": "db89d6b7fab661acef670d665bb6bf3e49cc939402aa28662fba2f459c08c987",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/pages/PairingPage.tsx",
+      "sha256": "1c5555f698ef6329fb2cd39edf7c73a1e719cee7429fb02710c5a211376e4496",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/pages/PluginsPage.tsx",
+      "sha256": "5f1be15b2dc80ceba9b0c86364360ee6f4a4d31975e35f04344d02ed628b5c00",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/pages/ProfileBuilderPage.tsx",
+      "sha256": "dc81bbdbbdb6c59f6c05988163bd074a3ec143f3664cd83ed3316dfd2048a240",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/pages/SessionsPage.tsx",
+      "sha256": "2c041d083e1ce760a4d7bac1a99d3dc79f32578e1ad01ae32abbc65e17b6939e",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/pages/SkillsPage.tsx",
+      "sha256": "ce694ede859178ef9106e9d3b84a4478f00ce9898cd647bd5837aa7cf384ab2b",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/pages/SystemPage.tsx",
+      "sha256": "b68224a66c704166022568133d9ea3114ca5b3f03a0c5371b81b1d23dc13c4b3",
+      "origin": "deployed-hermes-working-tree"
+    },
+    {
+      "path": "web/src/pages/WebhooksPage.tsx",
+      "sha256": "29422fee3ddf90fd0bd6b0bf05cebaad8113f0156c4c95d6f4e5b0503c64b216",
+      "origin": "deployed-hermes-working-tree"
+    }
+  ],
+  "package_files": [
+    {
+      "path": "contrib/hermes-team/.gitignore",
+      "sha256": "db0d59a3d8c52065019fc720bf44e428712fbb27731836eff585e62df01f9b7c",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/README.md",
+      "sha256": "7ae06afbfbd854a31d96bfeef5cf3b9083bf6d21a0a6b7638b3db18fe9e9d3c4",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/dashboard/index.js",
+      "sha256": "36e4f87943aab96dbbd45759a150667dbe3310a4ddbdf56e94484597a888abf1",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/dashboard/kanban/index.js",
+      "sha256": "4aac0b827c7179c677e138e6e6e20e6030635162bd8ad451236e14a22917aaee",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/dashboard/kanban/style.css",
+      "sha256": "e10631ff855172158362a5b9212c129ff8f6f28635f36233bf35d84866abade4",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/dashboard/manifest.json",
+      "sha256": "fb5540c04873d4f1f7122d563a268324a53b8df7e7c1f079049d38213308246a",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/dashboard/operator-status.js",
+      "sha256": "f8787b37f989bd5f52ef96d88e238012d98a12850df2835677c9f2b97aaed158",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/dashboard/patches/hermes-0.20.6-folder-picker.patch",
+      "sha256": "8e90c44931129b09d21a87a60a85f042d819beb6317a01133f33fdcef5e5fd4a",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/dashboard/patches/hermes-0.20.6-kanban-usability.patch",
+      "sha256": "119e097dceac3049a5e91e79bfd0e65b955f7866c9de26a5f70164ea036e2514",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/dashboard/patches/hermes-0.20.6-russian-ui.patch",
+      "sha256": "7de318ac5268a1c3ca251d265f2776a7581ff8bd533ae07175a13b5967ff3323",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/dashboard/plugin_api.py",
+      "sha256": "79a9d37d58b1d7fec4f4447ce0f8d96241ac7c7e3ecc85b2d72f6806dffb6a7a",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/dashboard/style.css",
+      "sha256": "eae1ccc857440c5f726de2a7702548153553b385b71bdf40deee41b7c03c178c",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/dashboard/themes/team-readable.yaml",
+      "sha256": "f0b879ac5f67698fc1678eb131d352d6e6e86979cd6a0a78e8d664e3ed31a15a",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/docs/DASHBOARD-LOCALIZATION.md",
+      "sha256": "a35e73f3082065f38d19fb33b27c65a50404e1e7bdb6cad0a4c3ebb185475b90",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/docs/DOCUMENT-ATTACHMENTS-VALIDATION.md",
+      "sha256": "ee934635f6cfab79d59ac0bb32329d9d95c68aaab6373a7c8d52eb09a51f1ddb",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/docs/FOLDER-PICKER.md",
+      "sha256": "8a8634accdd32bb4a717c987acb38c41079df8e58c025a8ddd7b22fb247fe2a5",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/docs/FORK-EXPORT.md",
+      "sha256": "f5038e5cf783e17eb7adbbde982f448b4f93699ad566fd8bc93abfe2366a235f",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/docs/KANBAN-USABILITY.md",
+      "sha256": "c75a24ea078f4ac9ba370874ddb7f094dd248a52865b0248913a275a92c26296",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/docs/LAN-DASHBOARD-PROXY.md",
+      "sha256": "bd50341b64de8ba9dddcfe24507b48f0f152ee06243650f4c1a5d30e64c7625a",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/docs/OPERATIONS.md",
+      "sha256": "cbae33830e9fbc74d2bf3fbe538c85e9ff2f2fad4a4705bf046422ce12e5a994",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/docs/OWNER-QUESTIONS-VALIDATION.md",
+      "sha256": "22b8d50a2bcfb5f685d20b4d2630a58108072c2c0625847565f1eba9d57076fe",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/docs/OWNER-WORKFLOW-VALIDATION.md",
+      "sha256": "e6d9e2bb4e164c11590b8c462eefb42b3ac7c99bf53afbfc84d012fb552e87d2",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/docs/OWNER-WORKFLOW.md",
+      "sha256": "001aa8284c7d4eb5e98a5662cf7a9c0fd27600ebac4712f4061926fcedf7362a",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/docs/PROJECT-ONBOARDING-PROMPT.md",
+      "sha256": "cb50a3d525844fd5566130a2ac5ba7060bca565139e633bfdad4bc92e8fdbfbe",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/docs/QUOTA-SOURCES.md",
+      "sha256": "6807a4e377057bf77b5f8945008690a0c6354dc30e84ab986152fb22e6b0a3e2",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/docs/TEST-RUNTIME-PREREQUISITES.md",
+      "sha256": "a781a7fa064e0d6b41a235b6c9fd31445cb9fa6b8c2e0372bcc8768eb382bd95",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/docs/USER-GUIDE.md",
+      "sha256": "66aaa13bf2d86beeb5ad6748245db952f5811481f76009f5efff8b513803e8c9",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/docs/VALIDATION.md",
+      "sha256": "e05913d65c535e0e70fe2d920f7ec093807d25749b20dbbf34d319cc3cfe8629",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/docs/execution-policy.md",
+      "sha256": "edf47af8b3079b0c5c9b19c7c05ecbd4411eb64b049664c197f245a2d9794a84",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/examples/BRIEF.md",
+      "sha256": "c207947c6a773c9da2054eb46f0c4e8c6ca2a7cbfa9a9ca07fe8452fa6dfc51c",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/examples/demo/.gitignore",
+      "sha256": "57577fb2489cc81f93c1d5d65b3550b9fb6bd5b0909951da4e8c761942a8d7fc",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/examples/demo/AGENTS.md",
+      "sha256": "493aa15b9c3203e3dcbb808af576fee4be0a9d3430445fe3ab9ecd7150a20d98",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/examples/demo/go.mod",
+      "sha256": "cc0703209fc5fcf27b46576d1ec292e742a686243f37a31c7f40b84445ff73bd",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/examples/demo/internal/httpapi/handler.go",
+      "sha256": "9d9a564c3f6446dbfcc3996063eefb3ae9906b1032bf3678dc87efca8a684c20",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/examples/demo/internal/httpapi/handler_test.go",
+      "sha256": "98512ba29e1979e2e462803647a76997a89dad95007d9481165d2c809125fcbc",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/plugins/engineering-team/__init__.py",
+      "sha256": "933a58d4a14a19e7cbbf8a163757971fd0f2f6a0ac31fe42ab341a9096375054",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/plugins/engineering-team/plugin.yaml",
+      "sha256": "b18df2c8e00795563bed5847ff1621e8b55be42b2a65cc9041c25bfdf256da55",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/requirements-attachments.txt",
+      "sha256": "b0c0407dbc80916100575b0515ecb5cea05a102559e67b69735a1297a80db3ac",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/roles/COMMON.md",
+      "sha256": "d897c2f131759e1cf06f15f84fd89a0a8e02c7803a6ddd3caf230a4027b2f106",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/roles/analyst.md",
+      "sha256": "be6db876ec6d0687b3ec6cb1ab936d0554d8de8055588f76e5ca0a32ad97c609",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/roles/backend.md",
+      "sha256": "23528cd4ff467d426e0fb34b7b99e794241091dd6fd7c544dcc78edf9d4a5396",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/roles/coordinator.md",
+      "sha256": "07ce38f0e3a9f53b40e4076aa7017e3bbfaa578c419b3a3c646343123c97c427",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/roles/developer.md",
+      "sha256": "132267bab9990ad70b07d2cb4f9faeea0b1c2bdd6c66f88bc863bc7de2305b5d",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/roles/frontend.md",
+      "sha256": "c09a2cda67ac6b57577a013b9f34db213c3c22861aaa722f382f13bf78994b39",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/roles/go.md",
+      "sha256": "dfb471b480703f5135dbfc3b5c3aa27b11e27cae8743ce93a402adffffe3e9b5",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/roles/integrator.md",
+      "sha256": "2694bd7eec3070da217134ab62515689b043d4097e53ae615655290ed9176932",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/roles/judge.md",
+      "sha256": "48932b430b0c39763e4588e0e8770d33a4691378164226cec5120041e728ccf7",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/roles/mobile.md",
+      "sha256": "24e56c665cfa31992f186763bb809f4daab03aa9b617e05685aebd888010a210",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/roles/planner-architect.md",
+      "sha256": "5351a677c947d7a927c84bdd4af3acf0f7977e7655972aace4eb306c402b8873",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/roles/qa-regression.md",
+      "sha256": "7d72401d885d462f846fe15f30822e50e90660d81325b43547b35b362be39bd3",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/roles/reviewer.md",
+      "sha256": "8503280721f0817ec57104309f1d236a176567949d3e5aed4729d4a935d82232",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/roles/skeptic.md",
+      "sha256": "ffde6332671fd5025677c2e26e0b1b49dd22bd75855fcfb16e30bccec1e57d6e",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/roles/test-designer.md",
+      "sha256": "dfb0dd3a3be0c84de42817aae613d91f3a0a7f28df876946bd3b1953d76dbdc9",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/backend_test_bridge.py",
+      "sha256": "ed6dffb581f143a5b891a97fbeafff3b9a0c61e4ba60c1021905e8a3cb84e69c",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/bootstrap.py",
+      "sha256": "e82f01a2b869b3e1d599e7818abc33a3b26cafde8de3e3e0227cd14351a62fa8",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/demo_walkthrough_bridge.py",
+      "sha256": "134853cc1e3ea185fd5b55d78b12d97b82a97f44255a54a8b4888ab2c7445c2e",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/harden_controller_cards.py",
+      "sha256": "4f411601b23cdbd5782b4c7fc13f52fbeda23bccdd028ff7b8acff86e2cf2756",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/harden_shared_anthropic_auth.py",
+      "sha256": "9c91dd6d7c6d0d476a53998a2f7380653aebcd4f78e689683e139cc8e2a12d19",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/harden_test_wait_budget.py",
+      "sha256": "7ba88eaaf9936ee9772f34c2d1fef7d06a2c65090c8fb9f42127741da4b273bf",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/harden_worker_env.py",
+      "sha256": "2cc377ab0eac5ed903fee9c2c67a8750c583a30de50ddf85121c3605539b6299",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/hermes-backend-test-jobs.service",
+      "sha256": "793ced1d1a72596a35fb2dfda24988707565cd9b8d16c7173d2796c2f4c3c4ef",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/hermes-backend-tests",
+      "sha256": "2964cf098784aaa1b4a9a487ef18cd8ae54c8e83f6aed3dc6b05f84f96afee78",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/hermes-check-jobs.service",
+      "sha256": "9933e80d9f442315eeed6bf1069829eeb11a397c5e1e7ca814b45bc3184db45c",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/hermes-checks",
+      "sha256": "e8206f1057f00db024dfe04377dd00159e5c7e0915f34127f04f4e10e46c4f3d",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/hermes-rootless-test-docker.service",
+      "sha256": "473cd148694ba09f9aa373f616fc3126838278821a417511c87681aa7d51f8ef",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/hermes-rootless-test-docker.sh",
+      "sha256": "8c2d3fcb4f61362c9339a8ef2052336867aeb0794f4b04cf445085835f819649",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/hermes-team-controller.service",
+      "sha256": "722172d28492ce36f746eaf526269b11332357f2f5672eff55a035d5d1dc3b29",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/hermes-test-wait",
+      "sha256": "6ffa4aeedc1c3dc09dedb2d0f384699035b0ae66f5dbc2f9699f3cb8f6d135e9",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/hermes-vpn-dashboard-proxy.service",
+      "sha256": "12284197112ce14dbf48ccdecf35ded49b79b4681d97c2f972475debab8e4ad4",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/install_go.py",
+      "sha256": "4b668e731443e4656040ab1a4da2db0eaebaa33154035ce38378b4d93c456cfe",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/isolated_backend_tests.py",
+      "sha256": "a572beb20ccd5b8ab63e11dd6e307d0eb47ddf4f68c97772943e3e5a91a7cf9b",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/isolated_demo_walkthrough.py",
+      "sha256": "b75227e0ba884a7aaf14ae4641c40d6e400c931052449d14210f493c42b190f9",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/lan_dashboard_proxy.py",
+      "sha256": "15aae7d907247fa8f56c2bdc2764db7059351da2af07651e2abd4e30ced5e91d",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/stage_distribution.py",
+      "sha256": "9a18c896e4044d71147e2b602ee510926069d425f39489a9567690876e48749a",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/scripts/teamctl",
+      "sha256": "703b845f3b2d80085e426e477e947c09d42c0d55ab5606a36f418d74bff17bda",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/skills/engineering-team/SKILL.md",
+      "sha256": "562f0ef7c6df738d5f50171e86c7b7685ede57fd8ecc1f08912708ca6cd0fc63",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/__init__.py",
+      "sha256": "743b9d1471c3ea2d16e696a6fea452b72a177521b7d1c359a392b9f14ebebe2d",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/assignments.py",
+      "sha256": "2c77519145cfd9c9db8d656eb25c3037382a38dc6ac235c375f06ee484ac9b45",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/attachments.py",
+      "sha256": "917e2f3af60e91de95e4d8d7534a7cb05e0b286281b064577f102c5ad61d36be",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/backend_test_jobs.py",
+      "sha256": "b418cfd9b3ed20fe89e0b562b5aa8d1beae809ab836b4dc05b0af1746ba2fd62",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/check_jobs.py",
+      "sha256": "ff7f50638348e6720897290407a8b02fcca80e9301b56f68cf6abc312f7d7323",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/configure.py",
+      "sha256": "d3b9945db6a28163edd670eea4a2464ea412c859222eb197e5dc097dd7b55e28",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/contracts.py",
+      "sha256": "5236f42fc0e6a3977bf89d39568ecd9651c52a8e45dc0b4f59d815998661eef4",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/controller.py",
+      "sha256": "9e1c58460b618229b6e40b909dcb58134d0a3a09262db824c3b3b21524ea33d5",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/dashboard_api.py",
+      "sha256": "6161e9975f92f79c308acd2f5464ad3f5d0411ee978eeeb82b4b338497bc7874",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/efficiency.py",
+      "sha256": "6120fa19757a11120e10aa9fd7cd03c63414e68dfd4499fa9d6b6b5c8b8b39fe",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/execution_policy.py",
+      "sha256": "a68fd94c2068507c08b9fde5ad7a3d3aa92824c3d968c226dc55f9850d3be977",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/git_gates.py",
+      "sha256": "9e71f37dc06d4d182b4f325b9234b88ebaffbfe922a840fe982a9ae9057fcd32",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/hermes_adapter.py",
+      "sha256": "36356b491fce4523c1886de1975a76491bbbc997d6d1ad9592c417bf87fd03d4",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/human_workflow.py",
+      "sha256": "d8b752d1e998525944618cee988bf9e99d78f04483ccdbae63c8fb9e4bf5b8a3",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/install_profiles.py",
+      "sha256": "cc0337dc2babca7816584fb815f635dbb54b0ac771b0104299ccc1d6159acbd3",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/owner_questions.py",
+      "sha256": "8c85e266e3f2ac8d1c246a30905c36d073907a06a734b24864c34c57951b1f96",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/plan_gates.py",
+      "sha256": "7ca1453a6d814b44a712bbd0fe5533dd80024c1962a05305ce7635b491884be9",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/prerequisites.py",
+      "sha256": "ab43d9f3fce4af5b687f07bd2a1af40235dbc114ba86f783c17a38b3ca4b79e3",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/project_context.py",
+      "sha256": "503b6c7c2fe9c1d7fe501c54d7b57c5ba78bf7608fbbea6eb87d65f2124ba8c7",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/quota.py",
+      "sha256": "2657c3e9dc7ba2b7a19b678388b278493c08b903f45c9c68e3d7da8aeaa69822",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/quota_sources.py",
+      "sha256": "7c92be8822ee5c9cf9b553e26b0d84d6afce4617ba63508636ce7f297dfa35de",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/telegram_workflow.py",
+      "sha256": "0e66d0cdccc1113ddfdd1eb48190a3cd16471a062dac559beaa43020310adbbb",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/test_lock.py",
+      "sha256": "7c6876396a065fd9e7d231c75505b583786cbeb17bf9c5cf06833433c935b8c2",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/test_waits.py",
+      "sha256": "1704838319388246b1bc47c70d6cf7a17c84cdf9839ef4fc92056b5d83d5385f",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/web_config.py",
+      "sha256": "2677a910ec3f82041d335ccec4f9789468749ca72bf8e61e9be88f53fdb3182d",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/team_engine/worker_budget.py",
+      "sha256": "c22c7cf13eff16bcfbf486238e4f32553a2bd63d1f14d8cdcba2d3b13ce085b5",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/templates/DESIGN.md",
+      "sha256": "769a49d277c30969fa574bb10edf94a02513bc3929573c0f4e29e5b7b03d1178",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/templates/IMPLEMENTATION.md",
+      "sha256": "f5903d56d65158200f70b2512d05d846ad2e9f15760e09f4a0704dd3a071a56e",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/templates/INTEGRATION.json",
+      "sha256": "693145a760de547b2307be7a04269ae778ae60daa841dffefa7b82e8c62df9e3",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/templates/PLAN-DECISION.json",
+      "sha256": "586500691801409279ad3004be288cd9731a09f6e52a44eac64db4bebb642d7c",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/templates/PLAN-REVIEW.json",
+      "sha256": "fdf51104b10361d47df568a9485c572c7f19d5bdf1739f867161d998df002f10",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/templates/PLAN.json",
+      "sha256": "468c736344e822f299e8f643884d7f6fdb6442d28f470d991902959a0ba0f0ca",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/templates/QA.json",
+      "sha256": "546b5a8faa407096167714f27d5b0960a9277abde4d3c3a2525511a205d3aa5e",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/templates/REVIEW.json",
+      "sha256": "88a606457e7cdc22eb62e161eb4d8252c0c3604da67a23a1c838b7a2d37b3c7b",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/templates/SPEC.md",
+      "sha256": "f8af9ea00e8c34feb91f6e1eda764e59fd7afab485ad9e2fe9fbd980e3268200",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/templates/TASK.md",
+      "sha256": "cc4678b985736fcd61745b0fefe0a72b7f61376c3653e42745e9d40e786642af",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/templates/project-context/.agents/project.json",
+      "sha256": "5dbb08706a233537272e58b447bc15731ea018cfbea923881153ac247f473038",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/templates/project-context/AGENTS-snippet.md",
+      "sha256": "f6a7af74ba5bf2f1b06f98974c4a94356098ba294dc0f45bfc4a5fb3c822c0ab",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/templates/project-context/docs/agents/ARCHITECTURE.md",
+      "sha256": "e3a964bbb79598a589ef074450562e434ddcd855563a4ee7a098a4db6c36489e",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/templates/project-context/docs/agents/DEVELOPMENT.md",
+      "sha256": "ed2d695d8524d67f06b74f3f4e838cfa6c3dbc45deb7efcda306689a91b70dd8",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/templates/project-context/docs/agents/PROJECT.md",
+      "sha256": "de1eb8fc66a25123c0368f980eb970741caa4e84004c3500206f640b785617d8",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/templates/project-context/docs/agents/TESTING.md",
+      "sha256": "a867f2fc9c3d352c66d025dfe24a51885170c08fffbbc8f7614c098aed478fdc",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/conftest.py",
+      "sha256": "d79ef489bc7d56ce248016dfb0019f45b7597b622038a4d70a977defe0577ca1",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_assignments.py",
+      "sha256": "8f9df4378c02cf37fd7552ebfcf102f9f8cf01cdf5f103ad3e4c49de093687c5",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_attachment_api.py",
+      "sha256": "6ff6e4f51646edebac8062403925a5f75dff031ebf90d88d85c219ed72b69a74",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_attachments.py",
+      "sha256": "b789788f2891fa72f060903cffe66f2fe6951865934125e2dba4cc9cdc3f5300",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_backend_test_bridge.py",
+      "sha256": "06fb6c141af46122f7e48fa2482e0d0f85bef6f65110ecee9737b723b7cddf09",
+      "origin": "fork-packaging-or-public-documentation"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_backend_test_jobs.py",
+      "sha256": "41e7aebe79f6ee0d0a230b350ab91089c6d50d39ca4b842dd7e571649e4dd021",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_batch_workflow.py",
+      "sha256": "03902fb1682e333273e5d2a65b46f6027cce36d79e4a23fe77157dcbc21afc1b",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_budget_recovery.py",
+      "sha256": "13d22044a380582cdd3e07fda6972f192c243e42c3cfe27b508b21a2d48dfaf4",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_check_jobs.py",
+      "sha256": "bcdb0b07f41d76ae097f1e810bd4a9fd7d58f320dea8f9f43641997a7e2d5908",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_contracts.py",
+      "sha256": "52211faabaddcdc8e7824f95dc54955996c2972d2c1a7ddd326621b0379049e9",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_controller.py",
+      "sha256": "46982ae8b95b8e379c891c51c1286f779eb873e465cc02440e04089cd54c8914",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_dashboard_api.py",
+      "sha256": "3e0d01c04a6648e3c1789bb059f6dad3361a35e12d083b5f5e30a08e0dff9cc6",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_dashboard_attachments_ui.cjs",
+      "sha256": "c5832b8c1cae28b896c60e68c54d4cd34f255da5715de91661998b748ab6372c",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_dashboard_workflow_ui.cjs",
+      "sha256": "2f04bdb5f5872d6799091677c0ca7e43c2127bb37c076c2019af80b97b8770b0",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_efficiency.py",
+      "sha256": "7c3cd17fdd9b5e5a22871320bcaa376119955fd986069c11ae110ac72aa1113c",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_execution_policy.py",
+      "sha256": "ed77e7c4253745fb8dcbc8397732f79bbe79513a59faa60bba9c41a825cb7735",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_finalization_attempts.py",
+      "sha256": "45c584b95959139fd71d8fa0d51d40d6c62302c90cdcb1bf4ec4b6d577322eec",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_full_workflow.py",
+      "sha256": "4115c30d7009be7a9bf15732174cc02032ca4fca18b56cbb41c30e4773fb55bd",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_git_gates.py",
+      "sha256": "da14504df7208c224c2df4e1df416c434f38353807fdb5d3d31185255f8dc7f8",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_harden_controller_cards.py",
+      "sha256": "3823b47da3f119bef944481e3305fb84af942b037608efc4a12e5cd18df85f3d",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_harden_shared_anthropic_auth.py",
+      "sha256": "723bfeb728222bc37b8b2ca575c275ddd83b79ebfc7b8d37e530e771e584483f",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_harden_worker_env.py",
+      "sha256": "4174652de1f8d7928ff2b072b5ea680ae4c5b83dc4e99eb88c7abbb96dce13e7",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_hermes_adapter.py",
+      "sha256": "30e28347209f1d512ece1619c248d2ea4c5db163e83a243feb7d55944e0e3452",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_human_workflow.py",
+      "sha256": "93e1748ea3b3b15073f04969f6648a13ed8aba1af42c96c226c90d047e711b41",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_install_profiles.py",
+      "sha256": "d3b80942b7cb301f0d929ce2bc1061d5df381fea0d94d397bc25613d4fa0c0e5",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_isolated_backend_tests.py",
+      "sha256": "e51e5bad3fc33192dccdc9259574a4ed092ee1f0cab51914796a0488e2bf19cd",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_isolated_demo_walkthrough.py",
+      "sha256": "2b90af2fbc45d90e42b9dd579e08bc819cf88daf45c84ef93bc5e2f893d7f197",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_kanban_operator_status.cjs",
+      "sha256": "f9cb9e4ca0bedf21b0480a86821201cb9d2090abbb466c5846b81677749f9fe2",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_kanban_usability_ui.cjs",
+      "sha256": "af1a51f4b49baf02734271c3b44ff16df2f150ec34070a97c7476342862cefea",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_lan_dashboard_proxy.py",
+      "sha256": "707c36d2f569b307de3a86f4e34727aac95a1fb8ec941482346fa49515d957f7",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_plan_gates.py",
+      "sha256": "6a8a4eb545c7560dfe3259825c9f6bf79a01cd3529d89e2bc939178fee276c32",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_prerequisites.py",
+      "sha256": "26bb8984915ca4e2e084466199088b3318efcb3caf6cce0e9c66efe5c354144f",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_project_context.py",
+      "sha256": "db515cbaea2aacf105ba309aec33a0439dbc5b2594944e1d120f750879c2c047",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_project_context_cli.py",
+      "sha256": "cfd45f7ac9d70f9a15578a1ab0f2e4be4c88e8299911a7d2f0c098a952216a30",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_question_api.py",
+      "sha256": "c8a6668d34484f3735c09f77d5278121f631f8aa03e65d4191bd085a3eb59f67",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_quota.py",
+      "sha256": "99f84c5f7ca89126078d15a0727f9c727252f7b1fd7055946a1a4d89fcfe32cc",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_quota_sources.py",
+      "sha256": "24f3e46badac221f83b4769fe0e94a369574a4cefce087d96a855f7cdceadd57",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_runtime_regressions.py",
+      "sha256": "977e773e6fad7a8e5dc5154a35d94b9b400af69396ace85ae5d0020179795817",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_scope_amendment.py",
+      "sha256": "5a3079e74d00aece664c04ba4dc19712c77ea9e9ae776feb2c5640fe9ea0ab51",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_telegram_workflow.py",
+      "sha256": "80d8fff61aae031879a6219c10c6d0cf49e55f46f3d9fdd4f0ade0cdabac3de0",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_test_lock.py",
+      "sha256": "2395b6174a2ae45a0d038c601d9648a7812f6b59e4b20416f5401e2862f5cb22",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_test_waits.py",
+      "sha256": "e5483878948d3d2a95a1e5f8769fac4b6ce8d257db9ad84d6e7477d4820e1287",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_web_config.py",
+      "sha256": "d892fc66ed74d0af8b1ff7b2e86a9bb87bc6084a3bb8bbf75e220a9660273f6e",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_worker_budget.py",
+      "sha256": "62eda6329cdaba4d16afb5805770730fe17581f360dc67e61ff5d03d134d32d4",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "contrib/hermes-team/tests/test_workflow_api.py",
+      "sha256": "5124fed31f7234fd5c410ae9afc212740b3132e3e3557c807ba5517128d0e8da",
+      "origin": "local-team-bundle"
+    },
+    {
+      "path": "FORK.md",
+      "sha256": "7fd396ef27095e2da8be5ef350e43fe8b37db7e735f042887b2e630768fe7ed9",
+      "origin": "fork-packaging-or-regression-test"
+    },
+    {
+      "path": "README.md",
+      "sha256": "335b69c984a86ad91bd816d6ecfe3449baa9f10e331be84fac7bca43bde0535a",
+      "origin": "fork-packaging-or-regression-test"
+    },
+    {
+      "path": "contrib/.gitignore",
+      "sha256": "035be897b00b2e4df85234618e91ae2c91213ba53b2bf492fc890efec505f2ae",
+      "origin": "fork-packaging-or-regression-test"
+    },
+    {
+      "path": "tests/agent/test_account_usage.py",
+      "sha256": "5121a1c7fb19faf0dbe2ae9415bf8ae8cce92746533a34d575866f3a1f0b3efd",
+      "origin": "fork-packaging-or-regression-test"
+    },
+    {
+      "path": "contrib/hermes-team/dashboard/patches/.gitattributes",
+      "sha256": "1b75007e62637902e02c523a999ee2e7e4af7941cb100fcd1b2981355330231e",
+      "origin": "fork-packaging"
+    }
+  ],
+  "canonical_team_sources_covered": 142,
+  "canonical_source_adjustments": [
+    "tests/test_backend_test_bridge.py",
+    "team_engine/git_gates.py",
+    "team_engine/controller.py",
+    "team_engine/web_config.py",
+    "team_engine/quota.py",
+    "team_engine/plan_gates.py",
+    "team_engine/project_context.py",
+    "team_engine/install_profiles.py",
+    "team_engine/worker_budget.py",
+    "scripts/harden_test_wait_budget.py"
+  ],
+  "notes": [
+    "All modified deployed Hermes sources are included byte-for-byte.",
+    "Local team source includes tests and CSS not yet present in deployed runtime.",
+    "Test-only server path expectation was made portable; scoped conftest added.",
+    "Docs were curated for public publication; state, credentials, operation archives and business project snapshots are excluded.",
+    "Host backend_test_jobs.py is staged from the canonical team_engine/backend_test_jobs.py, not duplicated.",
+    "Whitespace-only cleanup of imported team Python files; unified diff context whitespace is preserved by a scoped gitattributes rule."
+  ]
+}

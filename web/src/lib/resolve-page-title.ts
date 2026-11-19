@@ -9,22 +9,25 @@ const BUILTIN: Record<string, keyof Translations["app"]["nav"]> = {
   "/cron": "cron",
   "/skills": "skills",
   "/plugins": "plugins",
+  "/files": "files",
+  "/mcp": "mcp",
+  "/channels": "channels",
+  "/webhooks": "webhooks",
+  "/pairing": "pairing",
+  "/system": "system",
   "/profiles": "profiles",
   "/config": "config",
   "/env": "keys",
   "/docs": "documentation",
 };
 
-// Built-in routes without an i18n nav key. Keep these in sync with the
-// sidebar labels in App.tsx — the naive capitalize fallback below mangles
-// initialisms ("/mcp" → "Mcp") and can't match multi-word labels.
-const BUILTIN_LITERAL: Record<string, string> = {
-  "/files": "Files",
-  "/mcp": "MCP",
-  "/channels": "Channels",
-  "/webhooks": "Webhooks",
-  "/pairing": "Pairing",
-  "/system": "System",
+const BUILTIN_DEFAULT_LABELS: Partial<Record<keyof Translations["app"]["nav"], string>> = {
+  files: "Files",
+  mcp: "MCP",
+  channels: "Channels",
+  webhooks: "Webhooks",
+  pairing: "Pairing",
+  system: "System",
 };
 
 export function resolvePageTitle(
@@ -38,15 +41,16 @@ export function resolvePageTitle(
   }
   const plugin = pluginTabs.find((p) => p.path === normalized);
   if (plugin) {
+    const pluginLabel = plugin.label.trim().toLowerCase();
+    if (pluginLabel === "kanban") return t.app.pluginLabels?.kanban ?? plugin.label;
+    if (pluginLabel === "achievements") return t.app.pluginLabels?.achievements ?? plugin.label;
     return plugin.label;
   }
   const key = BUILTIN[normalized];
   if (key) {
-    return t.app.nav[key];
-  }
-  const literal = BUILTIN_LITERAL[normalized];
-  if (literal) {
-    return literal;
+    return (t.app.nav as Record<string, string | undefined>)[key] ??
+      BUILTIN_DEFAULT_LABELS[key] ??
+      normalized.slice(1).charAt(0).toUpperCase() + normalized.slice(2);
   }
   // Derive title from pathname: "/profiles" → "Profiles"
   const segment = normalized.slice(1);

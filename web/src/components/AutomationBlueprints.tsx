@@ -1,3 +1,4 @@
+import { useComponentCopy } from "@/i18n/component-copy";
 import { useCallback, useEffect, useState } from "react";
 import { Clock, Wand2 } from "lucide-react";
 import { Button } from "@nous-research/ui/ui/components/button";
@@ -77,6 +78,7 @@ function BlueprintCard({
   showToast: (message: string, type: "error" | "success") => void;
   onCreated?: () => void;
 }) {
+  const copy = useComponentCopy();
   const [open, setOpen] = useState(false);
   const [values, setValues] = useState<Record<string, string>>(() => initialValues(blueprint));
   const [submitting, setSubmitting] = useState(false);
@@ -88,7 +90,7 @@ function BlueprintCard({
     try {
       const job = await api.instantiateAutomationBlueprint({ blueprint: blueprint.key, values }, profile);
       const when = job.schedule_display ? ` — ${job.schedule_display}` : "";
-      showToast(`${blueprint.title} scheduled${when}`, "success");
+      showToast(copy("{title} scheduled{when}", { title: blueprint.title, when }), "success");
       setOpen(false);
       setValues(initialValues(blueprint));
       onCreated?.();
@@ -99,7 +101,7 @@ function BlueprintCard({
     } finally {
       setSubmitting(false);
     }
-  }, [blueprint, values, profile, showToast, onCreated]);
+  }, [blueprint, values, profile, showToast, onCreated, copy]);
 
   return (
     <Card className={cn("overflow-hidden", themedBody)}>
@@ -124,7 +126,7 @@ function BlueprintCard({
             size="sm"
             onClick={() => setOpen((o) => !o)}
           >
-            {open ? "Cancel" : "Set up"}
+            {copy(open ? "Cancel" : "Set up")}
           </Button>
         </div>
 
@@ -154,7 +156,7 @@ function BlueprintCard({
                 disabled={submitting}
                 prefix={submitting ? <Spinner /> : <Clock />}
               >
-                Schedule it
+                {copy("Schedule it")}
               </Button>
             </div>
           </div>
@@ -171,6 +173,7 @@ function BlueprintCard({
  * via the same create_job path as everything else.
  */
 export function AutomationBlueprints({ profile, onCreated }: AutomationBlueprintsProps) {
+  const copy = useComponentCopy();
   const { toast, showToast } = useToast();
   const [blueprints, setBlueprints] = useState<AutomationBlueprint[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -191,17 +194,17 @@ export function AutomationBlueprints({ profile, onCreated }: AutomationBlueprint
   }, []);
 
   if (loadError) {
-    return <p className="text-sm text-red-500">Couldn't load blueprints: {loadError}</p>;
+    return <p className="text-sm text-red-500">{copy("Couldn't load blueprints")}: {loadError}</p>;
   }
   if (blueprints === null) {
     return (
       <div className="flex items-center gap-2 opacity-70">
-        <Spinner className="h-4 w-4" /> Loading blueprints…
+        <Spinner className="h-4 w-4" /> {copy("Loading blueprints…")}
       </div>
     );
   }
   if (blueprints.length === 0) {
-    return <p className="opacity-70">No automation blueprints available.</p>;
+    return <p className="opacity-70">{copy("No automation blueprints available.")}</p>;
   }
 
   return (

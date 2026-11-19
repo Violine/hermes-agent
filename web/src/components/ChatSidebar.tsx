@@ -48,6 +48,7 @@ import {
   shouldRetryEventsClose,
 } from "@/lib/events-reconnect";
 import { titleFromSessionInfoPayload } from "@/lib/chat-title";
+import { useI18n } from "@/i18n";
 
 import { cn } from "@/lib/utils";
 import { AlertCircle, ChevronDown, RefreshCw } from "lucide-react";
@@ -116,6 +117,7 @@ export function ChatSidebar({
   onDashboardNewSessionRequest,
   onSessionTitleChange,
 }: ChatSidebarProps) {
+  const { t } = useI18n();
   // `version` bumps on reconnect; gw is derived so we never call setState
   // for it inside an effect (React 19's set-state-in-effect rule). The
   // counter is the dependency on purpose — it's not read in the memo body,
@@ -495,7 +497,7 @@ export function ChatSidebar({
             refreshKey={modelRefreshKey}
             onChanged={(effort) =>
               setModelNotice(
-                `Reasoning effort set to ${effort}. Run /new or refresh the page to apply it to this chat.`,
+                (t.chat?.reasoningApplied ?? "Reasoning effort set to {effort}. Run /new or refresh the page to apply it to this chat.").replace("{effort}", effort),
               )
             }
           />
@@ -527,7 +529,7 @@ export function ChatSidebar({
                 onClick={reconnect}
                 prefix={<RefreshCw />}
               >
-                reconnect events feed
+                {t.chat?.reconnectEventsFeed ?? "reconnect events feed"}
               </Button>
             )}
           </div>
@@ -575,7 +577,7 @@ export function ChatSidebar({
           const m = pendingReloadModel;
           setPendingReloadModel(null);
           setModelNotice(
-            `Model set to ${m}. Run /new or refresh the page to apply it to this chat.`,
+            (t.chat?.modelApplied ?? "Model set to {model}. Run /new or refresh the page to apply it to this chat.").replace("{model}", m ?? ""),
           );
         }}
       />

@@ -1120,6 +1120,33 @@ def _oauth_trace(event: str, *, sequence_id: Optional[str] = None, **fields: Any
 # Auth Store — persistence layer for ~/.hermes/auth.json
 # =============================================================================
 
+# BEGIN hermes-team shared Anthropic pool (managed)
+def _credential_pool_auth_file_path(provider_id):
+    """Choose the auth store for credential-pool reads, writes, and locks.
+
+    Only a directly-contained, explicitly marked team profile shares its
+    Anthropic pool. All other providers and profiles retain native behavior.
+    """
+    active_path = _auth_file_path()
+    if provider_id != "anthropic":
+        return active_path
+    try:
+        from hermes_constants import get_default_hermes_root
+
+        root = get_default_hermes_root().resolve(strict=False)
+        profile_home = get_hermes_home().resolve(strict=False)
+        expected_parent = (root / "profiles").resolve(strict=False)
+        if profile_home.parent != expected_parent or not profile_home.name.startswith("team-"):
+            return active_path
+        marker = profile_home / ".hermes-team-managed.json"
+        if marker.is_symlink() or not marker.is_file():
+            return active_path
+        return root / "auth.json"
+    except Exception:
+        # Fail closed: an unexpected profile layout keeps native local storage.
+        return active_path
+# END hermes-team shared Anthropic pool (managed)
+
 def _auth_file_path() -> Path:
     path = get_hermes_home() / "auth.json"
     # Seat belt: if pytest is running and HERMES_HOME resolves to the real
@@ -1688,21 +1715,22 @@ def is_runtime_provider_routable(provider_id: str) -> bool:
 
 
 def read_credential_pool(provider_id: Optional[str] = None) -> Dict[str, Any]:
-    """Return the persisted credential pool, or one provider slice.
+    """Return persisted credential pools, sharing Anthropic only for managed teams.
 
-    In profile mode, the profile's credential pool is authoritative. If a
-    provider has no entries in the profile, entries from the global-root
-    ``auth.json`` are used as a read-only fallback — so workers spawned in a
-    profile can see providers that were only authenticated at global scope.
-
-    Profile entries always win: the global fallback only applies per-provider
-    when the profile has zero entries for that provider. Once the user runs
-    ``hermes auth add <provider>`` inside the profile, profile entries
-    fully shadow global for that provider on the next read.
-
-    Writes always go to the profile (``write_credential_pool`` is unchanged).
-    See issue #18594 follow-up.
+    A managed team profile reads the canonical root Anthropic row even when a
+    stale profile-local row exists. Other providers and unmarked profiles use
+    Hermes' original profile-first/global-fallback behavior.
     """
+    shared_anthropic = (
+        provider_id == "anthropic"
+        and _credential_pool_auth_file_path("anthropic") != _auth_file_path()
+    )
+    if shared_anthropic:
+        store = _load_auth_store(_credential_pool_auth_file_path("anthropic"))
+        pool = store.get("credential_pool")
+        entries = pool.get("anthropic") if isinstance(pool, dict) else None
+        return list(entries) if isinstance(entries, list) else []
+
     auth_store = _load_auth_store()
     pool = auth_store.get("credential_pool")
     if not isinstance(pool, dict):
@@ -1719,19 +1747,27 @@ def read_credential_pool(provider_id: Optional[str] = None) -> Dict[str, Any]:
         for gp_key, gp_entries in global_pool.items():
             if not isinstance(gp_entries, list) or not gp_entries:
                 continue
-            # Per-provider shadowing: profile wins whenever it has ANY entries.
             existing = merged.get(gp_key)
             if isinstance(existing, list) and existing:
                 continue
             merged[gp_key] = list(gp_entries)
+        if _credential_pool_auth_file_path("anthropic") != _auth_file_path():
+            canonical = _load_auth_store(_credential_pool_auth_file_path("anthropic"))
+            canonical_pool = canonical.get("credential_pool")
+            canonical_entries = canonical_pool.get("anthropic") if isinstance(canonical_pool, dict) else None
+            if isinstance(canonical_entries, list) and canonical_entries:
+                merged["anthropic"] = list(canonical_entries)
+            else:
+                merged.pop("anthropic", None)
         return merged
 
     provider_entries = pool.get(provider_id)
     if isinstance(provider_entries, list) and provider_entries:
         return list(provider_entries)
-    # Profile has no entries for this provider — fall back to global.
     global_entries = global_pool.get(provider_id)
     return list(global_entries) if isinstance(global_entries, list) else []
+
+
 
 
 _POOL_STATUS_FIELDS = (
@@ -1826,8 +1862,9 @@ def write_credential_pool(
     merge does not resurrect them from the on-disk copy.
     """
     removed = {rid for rid in (removed_ids or ()) if rid}
-    with _auth_store_lock():
-        auth_store = _load_auth_store()
+    target_path = _credential_pool_auth_file_path(provider_id)
+    with _auth_store_lock(target_path=target_path):
+        auth_store = _load_auth_store(target_path)
         pool = auth_store.get("credential_pool")
         if not isinstance(pool, dict):
             pool = {}
@@ -1865,7 +1902,8 @@ def write_credential_pool(
                 continue
             merged.append(sanitize_borrowed_credential_payload(disk_entry, provider_id))
         pool[provider_id] = merged
-        return _save_auth_store(auth_store)
+        return _save_auth_store(auth_store, target_path=target_path)
+
 
 
 def suppress_credential_source(provider_id: str, source: str) -> None:

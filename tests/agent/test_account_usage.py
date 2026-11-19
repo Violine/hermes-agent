@@ -32,6 +32,29 @@ class _FakeClient:
         return _FakeResponse(self.payload)
 
 
+@pytest.mark.parametrize("utilization", [0, 0.5, 1, 40, 100])
+def test_anthropic_usage_keeps_percentage_points(monkeypatch, utilization):
+    """Low OAuth usage is already a percentage, never a 0..1 fraction."""
+    calls = []
+    monkeypatch.setattr(
+        account_usage, "resolve_anthropic_token", lambda: "sk-ant-oat-test-token"
+    )
+    monkeypatch.setattr(
+        account_usage.httpx,
+        "Client",
+        lambda timeout: _FakeClient(
+            calls, {"five_hour": {"utilization": utilization}}
+        ),
+    )
+
+    snapshot = account_usage.fetch_account_usage("anthropic")
+
+    assert snapshot is not None
+    assert len(snapshot.windows) == 1
+    assert snapshot.windows[0].used_percent == float(utilization)
+    assert calls[0]["url"] == "https://api.anthropic.com/api/oauth/usage"
+
+
 @pytest.fixture
 def codex_usage_payload():
     return {

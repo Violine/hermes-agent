@@ -1,0 +1,19 @@
+[Unit]
+Description=Hermes dashboard authenticated LAN entry
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/home/alex/apps/hermes-vpn/.proxy-venv/bin/python /home/alex/apps/hermes-vpn/dashboard-proxy.py
+Environment=HERMES_DASHBOARD_BIND=192.168.1.20
+Environment=HERMES_DASHBOARD_LAN_CIDR=192.168.1.0/24
+Environment=HERMES_DASHBOARD_CREDENTIALS=/home/alex/apps/hermes-vpn/.dashboard-proxy-credentials.json
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=10
+NoNewPrivileges=yes
+UMask=0077
+
+[Install]
+WantedBy=default.target

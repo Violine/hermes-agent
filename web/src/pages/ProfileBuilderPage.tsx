@@ -23,20 +23,21 @@ import {
   type McpTransport,
 } from "@/lib/mcp-server-create";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n";
+import { en } from "@/i18n/en";
 
 // Profile name rule mirrors the backend (`^[a-z0-9][a-z0-9_-]{0,63}$`).
 const PROFILE_NAME_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
 type StepId = "identity" | "model" | "skills" | "mcp" | "review";
 
-const STEPS: { id: StepId; label: string }[] = [
-  { id: "identity", label: "Identity" },
-  { id: "model", label: "Model" },
-  { id: "skills", label: "Skills" },
-  { id: "mcp", label: "MCPs" },
-  { id: "review", label: "Review" },
+const STEPS: { id: StepId; key: string }[] = [
+  { id: "identity", key: "stepIdentity" },
+  { id: "model", key: "stepModel" },
+  { id: "skills", key: "stepSkills" },
+  { id: "mcp", key: "stepMcp" },
+  { id: "review", key: "stepReview" },
 ];
-
 interface ModelChoice {
   provider: string;
   model: string;
@@ -58,6 +59,8 @@ interface ModelChoice {
  * bundle" toggle keeps everything (sends no keep list).
  */
 export default function ProfileBuilderPage() {
+  const { t } = useI18n();
+  const ui = t.profileBuilderUi ?? en.profileBuilderUi!;
   const navigate = useNavigate();
   const { toast, showToast } = useToast();
 
@@ -175,7 +178,7 @@ export default function ProfileBuilderPage() {
       entry = buildMcpServerCreate(mcpDraft);
     } catch (error) {
       showToast(
-        error instanceof Error ? error.message : "Invalid MCP server",
+        error instanceof Error ? error.message : ui.invalidMcp,
         "error",
       );
       return;
@@ -243,7 +246,7 @@ export default function ProfileBuilderPage() {
   const handleCreate = async () => {
     const n = name.trim();
     if (!PROFILE_NAME_RE.test(n)) {
-      showToast("Invalid profile name (lowercase, digits, - and _)", "error");
+      showToast(ui.invalidName, "error");
       setStep("identity");
       return;
     }
@@ -264,13 +267,13 @@ export default function ProfileBuilderPage() {
       const pending = (res.hub_installs ?? []).filter((h) => h.pid).length;
       showToast(
         pending
-          ? `Profile "${n}" created — ${pending} hub skill${pending === 1 ? "" : "s"} installing`
-          : `Profile "${n}" created`,
+          ? `Профиль «${n}» создан — запущена установка ${pending} навыков из каталога`
+          : `Профиль «${n}» создан`,
         "success",
       );
       navigate("/profiles");
     } catch (e) {
-      showToast(`Create failed: ${e}`, "error");
+      showToast(`Не удалось создать профиль: ${e}`, "error");
     } finally {
       setCreating(false);
     }
@@ -282,9 +285,9 @@ export default function ProfileBuilderPage() {
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 p-4">
       <div className="flex items-center justify-between">
-        <H2>New profile</H2>
+        <H2>{ui.newProfile}</H2>
         <Button ghost onClick={() => navigate("/profiles")}>
-          Cancel
+          {t.common.cancel}
         </Button>
       </div>
 
@@ -306,7 +309,7 @@ export default function ProfileBuilderPage() {
               i > 0 && !nameValid && "cursor-not-allowed opacity-50",
             )}
           >
-            {i + 1}. {s.label}
+            {i + 1}. {ui[s.key]}
           </button>
         ))}
       </div>
@@ -316,7 +319,7 @@ export default function ProfileBuilderPage() {
           {step === "identity" && (
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="pb-name">Profile name</Label>
+                <Label htmlFor="pb-name">{ui.profileName}</Label>
                 <Input
                   id="pb-name"
                   placeholder="coder"
@@ -327,16 +330,15 @@ export default function ProfileBuilderPage() {
                 />
                 {name && !nameValid && (
                   <p className="text-xs text-destructive">
-                    Lowercase letters, digits, hyphens and underscores; must
-                    start with a letter or digit.
+                    {ui.invalidName}
                   </p>
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="pb-desc">Description (optional)</Label>
+                <Label htmlFor="pb-desc">{ui.descriptionOptional}</Label>
                 <Input
                   id="pb-desc"
-                  placeholder="What this agent profile is for"
+                  placeholder={ui.descriptionHint}
                   value={description}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setDescription(e.target.value)
@@ -349,18 +351,17 @@ export default function ProfileBuilderPage() {
           {step === "model" && (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Pick the model+provider for this profile. Skip to use the
-                default.
+                Выберите модель и провайдера для профиля. Пропустите этот шаг, чтобы использовать значение по умолчанию.
               </p>
               <Input
-                placeholder="Filter models…"
+                placeholder={ui.filterModels}
                 value={modelFilter}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setModelFilter(e.target.value)
                 }
               />
               {modelChoices === null ? (
-                <p className="text-sm text-muted-foreground">Loading models…</p>
+                <p className="text-sm text-muted-foreground">{ui.loadingModels}</p>
               ) : (
                 <div className="max-h-72 space-y-1 overflow-y-auto">
                   <button
@@ -370,7 +371,7 @@ export default function ProfileBuilderPage() {
                       modelChoice === "" ? "bg-primary/10" : "hover:bg-muted",
                     )}
                   >
-                    Use default (set later)
+                    {ui.defaultLater}
                   </button>
                   {filteredModels.map((c) => {
                     const key = `${c.provider}\u0000${c.model}`;
@@ -401,16 +402,15 @@ export default function ProfileBuilderPage() {
                   checked={keepAll}
                   onCheckedChange={(v) => setKeepAll(Boolean(v))}
                 />
-                Start from the full default skill bundle (recommended)
+                Начать с полного стандартного набора навыков (рекомендуется)
               </label>
               {!keepAll && (
                 <div className="space-y-2">
                   <p className="text-xs text-muted-foreground">
-                    Choose which built-in / optional skills to keep active.
-                    Unchecked skills are disabled in the new profile.
+                    Выберите встроенные и дополнительные навыки, которые нужно оставить включёнными. Остальные навыки будут отключены в новом профиле.
                   </p>
                   <Input
-                    placeholder="Filter skills…"
+                    placeholder={ui.filterSkills}
                     value={skillFilter}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setSkillFilter(e.target.value)
@@ -418,7 +418,7 @@ export default function ProfileBuilderPage() {
                   />
                   {skills === null ? (
                     <p className="text-sm text-muted-foreground">
-                      Loading skills…
+                      Загрузка навыков…
                     </p>
                   ) : (
                     <div className="max-h-56 space-y-1 overflow-y-auto">
@@ -453,10 +453,10 @@ export default function ProfileBuilderPage() {
 
               {/* Skills hub */}
               <div className="space-y-2 border-t pt-4">
-                <Label>Add from the skills hub</Label>
+                <Label>{ui.addFromHub}</Label>
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Search the hub (e.g. linear, hyperliquid)…"
+                    placeholder={ui.searchHubHint}
                     value={hubQuery}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setHubQuery(e.target.value)
@@ -470,7 +470,7 @@ export default function ProfileBuilderPage() {
                     onClick={runHubSearch}
                     disabled={hubSearching}
                   >
-                    {hubSearching ? "Searching…" : "Search"}
+                    {hubSearching ? ui.searching : ui.search}
                   </Button>
                 </div>
                 {hubResults.length > 0 && (
@@ -492,7 +492,7 @@ export default function ProfileBuilderPage() {
                           )}
                         </span>
                         <Button size="sm" ghost onClick={() => addHubSkill(r)}>
-                          Add
+                          {ui.add}
                         </Button>
                       </div>
                     ))}
@@ -506,7 +506,7 @@ export default function ProfileBuilderPage() {
                         <button
                           className="ml-1 text-xs"
                           onClick={() => removeHubSkill(r.identifier)}
-                          aria-label={`Remove ${r.name}`}
+                          aria-label={`${t.common.delete} ${r.name}`}
                         >
                           ×
                         </button>
@@ -523,30 +523,29 @@ export default function ProfileBuilderPage() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="space-y-1">
                   <h3 className="font-expanded text-base font-bold tracking-[0.04em]">
-                    MCP servers
+                    {ui.mcpServers}
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Add MCP servers to give this profile access to external
-                    tools and data.
+                    Добавьте MCP-серверы, чтобы предоставить профилю доступ к внешним инструментам и данным.
                   </p>
                 </div>
                 <span
                   className="text-xs text-muted-foreground"
                   aria-live="polite"
                 >
-                  {mcpServers.length} configured
+                  Настроено: {mcpServers.length}
                 </span>
               </div>
 
               <div className="space-y-4 border border-border bg-background/20 p-4 md:p-5">
-                <h4 className="font-medium">Add server</h4>
+                <h4 className="font-medium">{ui.addServer}</h4>
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="grid gap-1.5">
-                    <Label htmlFor="pb-mcp-name">Server name</Label>
+                    <Label htmlFor="pb-mcp-name">{ui.serverName}</Label>
                     <Input
                       id="pb-mcp-name"
-                      placeholder="Enter server name"
+                      placeholder={ui.enterServerName}
                       value={mcpDraft.name}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         setMcpDraft({ ...mcpDraft, name: e.target.value })
@@ -554,15 +553,15 @@ export default function ProfileBuilderPage() {
                     />
                   </div>
                   <div className="grid gap-1.5">
-                    <Label>Transport</Label>
+                    <Label>{ui.transport}</Label>
                     <div
                       className="grid grid-cols-2 border border-border bg-background/30 p-0.5"
                       role="group"
-                      aria-label="MCP transport"
+                      aria-label={ui.mcpTransport}
                     >
                       {(
                         [
-                          ["http", "HTTP/SSE"],
+                          ["http", ui.http],
                           ["stdio", "stdio"],
                         ] as const
                       ).map(([value, label]) => (
@@ -599,17 +598,17 @@ export default function ProfileBuilderPage() {
                       />
                     </div>
                     <div className="grid gap-1.5">
-                      <Label>Authentication</Label>
+                      <Label>{ui.authentication}</Label>
                       <div
                         className="grid grid-cols-3 border border-border bg-background/30 p-0.5 md:max-w-md"
                         role="group"
-                        aria-label="HTTP authentication"
+                        aria-label={ui.httpAuth}
                       >
                         {(
                           [
-                            ["none", "None"],
-                            ["header", "Bearer token"],
-                            ["oauth", "OAuth"],
+                            ["none", ui.none],
+                            ["header", ui.bearerToken],
+                            ["oauth", ui.oauth],
                           ] as const
                         ).map(([value, label]) => (
                           <button
@@ -632,13 +631,13 @@ export default function ProfileBuilderPage() {
                     {mcpDraft.httpAuth === "header" && (
                       <div className="grid gap-1.5">
                         <Label htmlFor="pb-mcp-bearer-token">
-                          Bearer token
+                          {ui.bearerToken}
                         </Label>
                         <Input
                           id="pb-mcp-bearer-token"
                           type="password"
                           autoComplete="new-password"
-                          placeholder="Token or Bearer token"
+                          placeholder={ui.tokenHint}
                           value={mcpDraft.bearerToken}
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                             setMcpDraft({
@@ -648,15 +647,13 @@ export default function ProfileBuilderPage() {
                           }
                         />
                         <p className="text-xs text-muted-foreground">
-                          Stored in the new profile&apos;s .env; config.yaml
-                          keeps only an environment-variable reference.
+                          Секрет будет сохранён в .env нового профиля; в config.yaml останется только ссылка на переменную окружения.
                         </p>
                       </div>
                     )}
                     {mcpDraft.httpAuth === "oauth" && (
                       <p className="text-xs text-muted-foreground">
-                        After creating the profile, open its MCP page and use
-                        Authenticate to complete OAuth.
+                        После создания профиля откройте раздел MCP и нажмите «Войти через OAuth», чтобы завершить авторизацию.
                       </p>
                     )}
                   </>
@@ -664,7 +661,7 @@ export default function ProfileBuilderPage() {
                   <>
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="grid gap-1.5">
-                        <Label htmlFor="pb-mcp-command">Command</Label>
+                        <Label htmlFor="pb-mcp-command">{ui.command}</Label>
                         <Input
                           id="pb-mcp-command"
                           placeholder="npx"
@@ -678,7 +675,7 @@ export default function ProfileBuilderPage() {
                         />
                       </div>
                       <div className="grid gap-1.5">
-                        <Label htmlFor="pb-mcp-args">Arguments</Label>
+                        <Label htmlFor="pb-mcp-args">{ui.arguments}</Label>
                         <Input
                           id="pb-mcp-args"
                           placeholder="-y @modelcontextprotocol/server"
@@ -691,7 +688,7 @@ export default function ProfileBuilderPage() {
                     </div>
                     <div className="grid gap-1.5">
                       <Label htmlFor="pb-mcp-env">
-                        Environment (KEY=VALUE per line)
+                        Переменные окружения (KEY=VALUE, по одной на строку)
                       </Label>
                       <textarea
                         id="pb-mcp-env"
@@ -707,7 +704,7 @@ export default function ProfileBuilderPage() {
                 )}
 
                 <div className="flex justify-end">
-                  <Button onClick={addMcpDraft}>Add server</Button>
+                  <Button onClick={addMcpDraft}>{ui.addServer}</Button>
                 </div>
               </div>
 
@@ -722,11 +719,11 @@ export default function ProfileBuilderPage() {
                         <span className="flex flex-wrap items-center gap-2">
                           <span className="font-medium">{s.name}</span>
                           <Badge tone="outline">
-                            {s.url ? "HTTP" : "stdio"}
+                            {s.url ? ui.http : "стандартный ввод-вывод"}
                           </Badge>
                           {s.auth && (
                             <Badge tone="outline">
-                              auth: {s.auth === "header" ? "bearer" : s.auth}
+                              {ui.authentication}: {s.auth === "header" ? ui.bearerToken : s.auth}
                             </Badge>
                           )}
                         </span>
@@ -741,7 +738,7 @@ export default function ProfileBuilderPage() {
                         className="shrink-0"
                         onClick={() => removeMcp(s.name)}
                       >
-                        Remove
+                        {t.common.delete}
                       </Button>
                     </div>
                   ))}
@@ -751,41 +748,41 @@ export default function ProfileBuilderPage() {
           )}
           {step === "review" && (
             <div className="space-y-3 text-sm">
-              <ReviewRow label="Name" value={name.trim() || "—"} />
+              <ReviewRow label={ui.name} value={name.trim() || "—"} />
               <ReviewRow
-                label="Description"
+                label={ui.description}
                 value={description.trim() || "—"}
               />
               <ReviewRow
-                label="Model"
-                value={pickedModel ? pickedModel.label : "Default (set later)"}
+                label={ui.model}
+                value={pickedModel ? pickedModel.label : ui.defaultLater}
               />
               <ReviewRow
-                label="Skills"
+                label={ui.skills}
                 value={
                   keepAll
-                    ? "Full default bundle"
-                    : `${keptSkills.size} built-in/optional kept` +
-                      (hubSkills.length ? ` + ${hubSkills.length} hub` : "")
+                    ? ui.fullBundle
+                    : `Оставлено навыков: ${keptSkills.size}` +
+                      (hubSkills.length ? ` + ${hubSkills.length} из каталога` : "")
                 }
               />
               {!keepAll && hubSkills.length > 0 && (
                 <p className="pl-24 text-xs text-muted-foreground">
-                  Hub: {hubSkills.map((s) => s.name).join(", ")}
+                  Из каталога: {hubSkills.map((s) => s.name).join(", ")}
                 </p>
               )}
               {keepAll && hubSkills.length > 0 && (
                 <ReviewRow
-                  label="Hub skills"
+                  label={ui.hubSkills}
                   value={hubSkills.map((s) => s.name).join(", ")}
                 />
               )}
               <ReviewRow
-                label="MCP servers"
+                label={ui.mcpServers}
                 value={
                   mcpServers.length
                     ? mcpServers.map((s) => s.name).join(", ")
-                    : "None"
+                    : ui.noSkills
                 }
               />
             </div>
@@ -800,11 +797,11 @@ export default function ProfileBuilderPage() {
           disabled={stepIndex === 0}
           onClick={() => setStep(STEPS[Math.max(0, stepIndex - 1)].id)}
         >
-          Back
+          Назад
         </Button>
         {step === "review" ? (
           <Button onClick={handleCreate} disabled={creating || !nameValid}>
-            {creating ? "Creating…" : "Create profile"}
+            {creating ? ui.creating : ui.createProfile}
           </Button>
         ) : (
           <Button
@@ -813,7 +810,7 @@ export default function ProfileBuilderPage() {
               setStep(STEPS[Math.min(STEPS.length - 1, stepIndex + 1)].id)
             }
           >
-            Next
+            Далее
           </Button>
         )}
       </div>

@@ -1,0 +1,6 @@
+name: engineering-team
+version: 1.0.0
+description: >
+  Telegram intake, status, discussion, and explicit approval controls for the
+  Hermes engineering-team workflow.
+author: Hermes Engineering Team

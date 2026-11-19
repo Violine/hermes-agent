@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "feature_id": "<stable-feature-id>",
+  "base_sha": "<target-base-sha>",
+  "head_sha": "<candidate-integration-sha>",
+  "decision": "blocked",
+  "gates": [
+    {
+      "name": "implementation_matches_plan",
+      "status": "pass",
+      "evidence_ref": "IMPLEMENTATION.md"
+    },
+    {
+      "name": "independent_review",
+      "status": "pass",
+      "evidence_ref": "REVIEW.json",
+      "assignee": "<reviewer>",
+      "run_id": "<review-run-id>",
+      "head_sha": "<sha>"
+    },
+    {
+      "name": "qa_regression",
+      "status": "pass",
+      "evidence_ref": "QA.json",
+      "assignee": "<qa-distinct-from-reviewer>",
+      "run_id": "<qa-run-id-distinct-from-review>",
+      "head_sha": "<sha>"
+    }
+  ],
+  "accepted_risks": [],
+  "blocking_items": [],
+  "owner_action": "<explicit decision needed; merge/release remains owner action>",
+  "created_at": "<ISO-8601 UTC>",
+  "assignee": "team-integrator",
+  "run_id": "<HERMES_KANBAN_RUN_ID>"
+}

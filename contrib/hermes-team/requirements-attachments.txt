@@ -1,0 +1,2 @@
+# Optional PDF text extraction; installed only inside the Hermes VPN runtime.
+pypdf==6.21.3

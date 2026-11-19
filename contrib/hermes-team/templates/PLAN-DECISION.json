@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "feature_id": "<stable-feature-id>",
+  "plan_sha256": "<controller-hash-of-SPEC-DESIGN-PLAN-snapshot>",
+  "assignee": "team-judge",
+  "run_id": "<native-run-id>",
+  "decision": "accept|revise|needs_input",
+  "resolutions": [
+    {
+      "finding_id": "skeptic:F-001",
+      "disposition": "resolved|dismissed|revise|needs_input",
+      "reason": "<evidence-based rationale or exact owner question>",
+      "evidence": "<source path, plan/task/AC or observed fact; required for resolved/dismissed>"
+    }
+  ],
+  "summary": "<decision, readiness, remaining blocker, and why>"
+}

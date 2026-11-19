@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "task_id": "<native-implementation-card-id>",
+  "role": "reviewer",
+  "assignee": "team-reviewer",
+  "run_id": "<exact HERMES_KANBAN_RUN_ID for this card run>",
+  "verdict": "blocked",
+  "base_sha": "<exact-base-commit>",
+  "head_sha": "<exact-reviewed-head-commit>",
+  "findings": [
+    {
+      "severity": "info",
+      "blocking": false,
+      "description": "<condition, file:line, actual vs expected behavior, impact, reproduction>"
+    }
+  ],
+  "checks": [
+    {
+      "name": "<review axis or command>",
+      "status": "skip",
+      "evidence": "<why skipped; skipped checks cannot promote the candidate>",
+      "command": ["<executable>", "<arg>"]
+    }
+  ],
+  "scope_summary": "<what was inspected and what was excluded>",
+  "created_at": "<ISO-8601 UTC>"
+}

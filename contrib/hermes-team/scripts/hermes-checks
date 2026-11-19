@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+export PYTHONPATH=/home/alex/.hermes/team/runtime
+export HERMES_SOURCE_ROOT=/home/alex/.hermes/hermes-agent
+export TZ=Asia/Almaty
+exec /home/alex/.hermes/hermes-agent/venv/bin/python -m team_engine.check_jobs "$@"

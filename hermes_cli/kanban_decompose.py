@@ -285,6 +285,11 @@ def decompose_task(
         task = kb.get_task(conn, task_id)
     if task is None:
         return DecomposeOutcome(task_id, False, "unknown task id")
+    # hermes-team: skip controller-managed cards in native decomposition
+    if getattr(task, "created_by", None) == "hermes-team-controller":
+        return DecomposeOutcome(
+            task_id, False, "controller-managed task is excluded from auto-decomposition"
+        )
     if task.status != "triage":
         return DecomposeOutcome(
             task_id, False, f"task is not in triage (status={task.status!r})"
@@ -465,4 +470,6 @@ def list_triage_ids(*, tenant: Optional[str] = None) -> list[str]:
             tenant=tenant,
             limit=1000,
         )
-    return [row.id for row in rows]
+    # hermes-team: exclude controller-managed cards from the auto-decomposer batch
+    return [row.id for row in rows
+            if getattr(row, "created_by", None) != "hermes-team-controller"]
