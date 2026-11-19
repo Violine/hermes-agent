@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "task_id": "<native-implementation-card-id>",
+  "role": "qa",
+  "assignee": "team-qa",
+  "run_id": "<exact HERMES_KANBAN_RUN_ID for this card run; distinct from reviewer>",
+  "verdict": "blocked",
+  "base_sha": "<exact-base-commit>",
+  "head_sha": "<exact-tested-head-commit>",
+  "findings": [
+    {
+      "severity": "info",
+      "blocking": false,
+      "description": "<steps, observed vs expected result, impact, environment>"
+    }
+  ],
+  "checks": [
+    {
+      "name": "<AC or regression scenario>",
+      "status": "pass",
+      "command": ["<executable>", "<arg>"],
+      "exit_code": 0,
+      "evidence": "<log path, test report, or concise observed result>"
+    }
+  ],
+  "deferred": {
+    "evidence_ref": "VERIFICATION-PLAN.json",
+    "policy_sha256": "<exact policy_sha256 from the pinned plan>",
+    "checks": [
+      {
+        "index": 0,
+        "name": "<exact planned deferred check name>",
+        "argv": ["<exact executable>", "<exact arg>"],
+        "sha256": "<exact digest from the pinned plan>"
+      }
+    ]
+  },
+  "supplemental_checks": [
+    {
+      "kind": "mutation_killed",
+      "name": "<negative sensitivity check name>",
+      "command": ["<exact argv>"],
+      "mutant_id": "<mutant identifier>",
+      "killed_by": "<specific test that detected the mutant>",
+      "exit_code": 1,
+      "head_sha": "<exact tested head SHA>",
+      "scratch_worktree": "<isolated scratch worktree used for the mutation>",
+      "clean_after_revert": true,
+      "evidence": "<expected failing assertion, log path, original run ID and provenance>"
+    }
+  ],
+  "environment": "<test environment and relevant versions; no secrets>",
+  "coverage_limitations": ["<none or explicit limitation and reason>"],
+  "created_at": "<ISO-8601 UTC>"
+}

@@ -1,0 +1,196 @@
+--- a/plugins/kanban/dashboard/dist/index.js
++++ b/plugins/kanban/dashboard/dist/index.js
+@@ -2309,6 +2309,151 @@
+     );
+   }
+ 
++  // Browse the Hermes server, not the browser computer. Reuse the managed
++  // Files API so authentication, sensitive-path filtering and locked roots
++  // have exactly the same policy as the dashboard Files page.
++  function ProjectDirectoryField(props) {
++    const { t, uiText } = useI18n();
++    const [open, setOpen] = useState(false);
++    const [listing, setListing] = useState(null);
++    const [pathInput, setPathInput] = useState("");
++    const [loading, setLoading] = useState(false);
++    const [error, setError] = useState(null);
++    const request = useRef(0);
++    const browseButton = useRef(null);
++
++    useEffect(function () {
++      return function () { request.current += 1; };
++    }, []);
++
++    async function load(path) {
++      const current = ++request.current;
++      setLoading(true);
++      setError(null);
++      setListing(null);
++      try {
++        const result = await SDK.api.listFiles(path || undefined);
++        if (request.current !== current) return;
++        setListing(result);
++        setPathInput(result.path);
++      } catch (e) {
++        if (request.current === current) setError(parseApiErrorMessage(e));
++      } finally {
++        if (request.current === current) setLoading(false);
++      }
++    }
++
++    function close() {
++      request.current += 1;
++      setOpen(false);
++      if (browseButton.current) browseButton.current.focus();
++    }
++
++    const directories = listing ? listing.entries.filter(function (entry) {
++      return entry.is_directory;
++    }) : [];
++
++    return h("fieldset", {
++      disabled: props.disabled,
++      className: "flex flex-col gap-2",
++      style: { border: 0, padding: 0, margin: 0, minWidth: 0 },
++    },
++      h("div", { style: { display: "flex", gap: "0.5rem", alignItems: "center" } },
++        h(Input, {
++          value: props.value,
++          onChange: function (e) { props.onChange(e.target.value); },
++          "aria-label": tx(t, "projectDirectory", "Project directory"),
++          placeholder: tx(t, "projectDirectoryPlaceholder", "~/projects/my-app"),
++          title: tx(t, "projectDirectoryHelp", "Project directory on the Hermes server"),
++          className: "h-8",
++          style: { minWidth: 0, flex: 1 },
++          disabled: props.disabled,
++          autoCapitalize: "none", autoCorrect: "off", spellCheck: false,
++        }),
++        h(Button, {
++          ref: browseButton, type: "button", size: "sm", variant: "outline",
++          disabled: props.disabled, "aria-expanded": open,
++          onClick: function () {
++            if (open) { close(); return; }
++            const start = props.value.trim();
++            setPathInput(start);
++            setOpen(true);
++            void load(start);
++          },
++        }, uiText("Browse…", "Обзор…")),
++      ),
++      open ? h("section", {
++        role: "region", "aria-label": uiText("Choose a server folder", "Выбор папки на сервере"),
++        className: "flex flex-col gap-2",
++        style: { padding: "0.75rem", border: "1px solid var(--color-border)", borderRadius: "0.5rem" },
++        onKeyDown: function (e) {
++          if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); }
++        },
++      },
++        h("div", { className: "text-xs text-muted-foreground" },
++          uiText("Folders available to Hermes on the server. Your computer's folders are not shown.",
++            "Папки, доступные Hermes на сервере. Папки вашего компьютера здесь не отображаются.")),
++        h("div", { style: { display: "flex", gap: "0.5rem" } },
++          h(Input, {
++            value: pathInput, onChange: function (e) { setPathInput(e.target.value); },
++            "aria-label": uiText("Server folder path", "Путь к папке на сервере"),
++            autoFocus: true, autoCapitalize: "none", autoCorrect: "off", spellCheck: false,
++            className: "h-8", style: { minWidth: 0, flex: 1 },
++            disabled: loading || !!(listing && !listing.can_change_path),
++            onKeyDown: function (e) {
++              if (e.key === "Enter") {
++                e.preventDefault(); e.stopPropagation();
++                if (!loading) void load(pathInput.trim());
++              }
++            },
++          }),
++          h(Button, {
++            type: "button", size: "sm", variant: "outline", disabled: loading,
++            onClick: function () { void load(pathInput.trim()); },
++          }, uiText("Go", "Перейти")),
++        ),
++        h("div", { style: { display: "flex", flexWrap: "wrap", gap: "0.5rem" } },
++          h(Button, {
++            type: "button", size: "sm", variant: "outline",
++            disabled: loading || !listing || !listing.parent,
++            onClick: function () { void load(listing.parent); },
++          }, uiText("Up one level", "На уровень выше")),
++          h(Button, {
++            type: "button", size: "sm", variant: "outline", disabled: loading,
++            onClick: function () { void load(); },
++          }, uiText("Start folder", "Начальная папка")),
++        ),
++        loading ? h("div", { role: "status", className: "text-xs text-muted-foreground" },
++          uiText("Loading folders…", "Загрузка папок…")) : null,
++        error ? h("div", { role: "alert", className: "text-xs text-destructive" },
++          uiText("Could not open folder: ", "Не удалось открыть папку: ") + error) : null,
++        listing ? h("div", {
++          "aria-label": uiText("Subfolders", "Вложенные папки"),
++          style: { maxHeight: "12rem", overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.25rem" },
++        }, directories.length ? directories.map(function (entry) {
++          return h(Button, {
++            key: entry.path, type: "button", size: "sm", variant: "ghost", title: entry.path,
++            style: { justifyContent: "flex-start", minHeight: "2rem", flexShrink: 0, overflow: "hidden" },
++            onClick: function () { void load(entry.path); },
++          }, h("span", { "aria-hidden": true }, "📁 "),
++          h("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, entry.name));
++        }) : h("div", { className: "text-xs text-muted-foreground" },
++          uiText("No subfolders. You can select this folder.", "Вложенных папок нет. Можно выбрать текущую папку."))) : null,
++        listing && listing.locked_root ? h("div", { className: "text-xs text-muted-foreground" },
++          uiText("Available root: ", "Доступный корень: ") + listing.locked_root) : null,
++        h("div", { style: { display: "flex", justifyContent: "flex-end", flexWrap: "wrap", gap: "0.5rem" } },
++          h(Button, { type: "button", size: "sm", variant: "outline", onClick: close },
++            uiText("Cancel selection", "Отменить выбор")),
++          h(Button, {
++            type: "button", size: "sm",
++            disabled: loading || !listing || pathInput.trim() !== listing.path,
++            onClick: function () { props.onChange(listing.path); close(); },
++          }, uiText("Select this folder", "Выбрать эту папку")),
++        ),
++      ) : null,
++    );
++  }
++
+   function NewBoardDialog(props) {
+     const { t, uiText } = useI18n();
+     const [slug, setSlug] = useState("");
+@@ -2401,17 +2546,10 @@
+               tx(t, "projectDirectory", "Project directory"), " ",
+               h("span", { className: "text-muted-foreground" },
+                 tx(t, "projectDirectoryHint", "(recommended)"))),
+-            h(Input, {
++            h(ProjectDirectoryField, {
+               value: projectDirectory,
+-              onChange: function (e) { setProjectDirectory(e.target.value); },
+-              placeholder: tx(t, "projectDirectoryPlaceholder",
+-                uiText("Absolute path to the project folder", "Абсолютный путь к каталогу проекта")),
+-              title: tx(t, "projectDirectoryHelp",
+-                uiText("Git projects use preserved worktrees. Other folders use the directory directly. Leave blank only for temporary work.", "Для Git-проектов создаются сохраняемые worktree. Для остальных каталогов используется сам каталог. Оставьте поле пустым только для временной работы.")),
+-              className: "h-8",
+-              autoCapitalize: "none",
+-              autoCorrect: "off",
+-              spellCheck: false,
++              onChange: setProjectDirectory,
++              disabled: submitting,
+             }),
+             h("div", { className: "text-xs text-muted-foreground" },
+               tx(t, "projectDirectoryExplanation",
+@@ -2515,17 +2653,10 @@
+           h("div", { className: "flex flex-col gap-1" },
+             h(Label, { className: "text-xs" },
+               tx(t, "projectDirectory", "Project directory")),
+-            h(Input, {
++            h(ProjectDirectoryField, {
+               value: projectDirectory,
+-              onChange: function (e) { setProjectDirectory(e.target.value); },
+-              placeholder: tx(t, "projectDirectoryPlaceholder",
+-                uiText("Absolute path to the project folder", "Абсолютный путь к каталогу проекта")),
+-              title: tx(t, "projectDirectoryHelp",
+-                uiText("Git projects use preserved worktrees. Other folders use the directory directly. Leave blank only for temporary work.", "Для Git-проектов создаются сохраняемые worktree. Для остальных каталогов используется сам каталог. Оставьте поле пустым только для временной работы.")),
+-              className: "h-8",
+-              autoCapitalize: "none",
+-              autoCorrect: "off",
+-              spellCheck: false,
++              onChange: setProjectDirectory,
++              disabled: submitting,
+             }),
+             h("div", { className: "text-xs text-muted-foreground" },
+               tx(t, "projectDirectoryOverrideHint",

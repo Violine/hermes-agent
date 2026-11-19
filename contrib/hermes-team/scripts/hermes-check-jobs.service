@@ -1,0 +1,18 @@
+[Unit]
+Description=Durable pinned project check jobs for Hermes Team
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/docker exec --env PYTHONPATH=/home/alex/.hermes/team/runtime --env HERMES_SOURCE_ROOT=/home/alex/.hermes/hermes-agent --env TZ=Asia/Almaty hermes-vpn-hermes /home/alex/.hermes/hermes-agent/venv/bin/python -m team_engine.check_jobs worker
+ExecStop=/usr/bin/docker exec --env PYTHONPATH=/home/alex/.hermes/team/runtime hermes-vpn-hermes /home/alex/.hermes/hermes-agent/venv/bin/python -m team_engine.check_jobs stop
+Environment=LANG=C.UTF-8
+Environment=LC_ALL=C.UTF-8
+Environment=TZ=Asia/Almaty
+UMask=0077
+Restart=on-failure
+RestartSec=5
+KillMode=control-group
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

@@ -848,4 +848,22 @@ def finalize_turn(
     agent._turn_preflight_display_snapshot = None
     agent._turn_received_provider_response = False
 
+    # TEAM_WORKER_BUDGET_FINALIZER_HOOK
+    import os as _team_os
+    if _team_os.environ.get("HERMES_KANBAN_TASK"):
+        try:
+            from pathlib import Path as _TeamPath
+            import sys as _team_sys
+            _team_runtime = _TeamPath.home() / ".hermes" / "team" / "runtime"
+            if _team_runtime.is_dir() and str(_team_runtime) not in _team_sys.path:
+                _team_sys.path.insert(0, str(_team_runtime))
+            from team_engine.worker_budget import record_worker_budget_usage
+            record_worker_budget_usage(
+                agent, api_call_count=api_call_count,
+                exit_reason=str(_turn_exit_reason),
+            )
+        except Exception as _team_budget_exc:
+            # Do not log model text, environment, or exception details.
+            logger.warning("team worker budget usage record failed (%s)", type(_team_budget_exc).__name__)
+
     return result

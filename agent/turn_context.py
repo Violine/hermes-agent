@@ -682,6 +682,18 @@ def build_turn_context(
     # NOTE: _turns_since_memory and _iters_since_skill are NOT reset here.
     agent.iteration_budget = IterationBudget(agent.max_iterations)
 
+    # BEGIN team worker budget hook (managed)
+    import os as _team_os
+    if _team_os.environ.get("HERMES_KANBAN_TASK"):
+        from pathlib import Path as _TeamPath
+        import sys as _team_sys
+        _team_runtime = _TeamPath.home() / ".hermes" / "team" / "runtime"
+        if _team_runtime.is_dir() and str(_team_runtime) not in _team_sys.path:
+            _team_sys.path.insert(0, str(_team_runtime))
+        from team_engine.worker_budget import apply_worker_budget_override
+        apply_worker_budget_override(agent)
+    # END team worker budget hook (managed)
+
     # Wall-clock run budget: per-run_conversation clock. Only stamped when a
     # budget is configured so the default path stays clock-free; the wrap-up
     # latch resets each turn (one notice per run, not per session).

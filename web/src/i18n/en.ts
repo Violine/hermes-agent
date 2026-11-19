@@ -71,17 +71,27 @@ export const en: Translations = {
     },
     nav: {
       analytics: "Analytics",
+      channels: "Channels",
       chat: "Chat",
       config: "Config",
       cron: "Cron",
       documentation: "Documentation",
+      files: "Files",
       keys: "Keys",
       logs: "Logs",
+      mcp: "MCP",
       models: "Models",
+      pairing: "Pairing",
       profiles: "Profiles",
       plugins: "Plugins",
       sessions: "Sessions",
       skills: "Skills",
+      system: "System",
+      webhooks: "Webhooks",
+    },
+    pluginLabels: {
+      achievements: "Achievements",
+      kanban: "Kanban",
     },
     modelToolsSheetSubtitle: "& tools",
     modelToolsSheetTitle: "Model",
@@ -107,6 +117,7 @@ export const en: Translations = {
     diskElevatedBanner:
       "Your agent's disk is filling up. Consider clearing old sessions or expanding its storage.",
     dismiss: "Dismiss",
+    loadingChat: "Loading chat…",
   },
 
   status: {
@@ -144,6 +155,8 @@ export const en: Translations = {
     updateHermes: "Update Hermes",
     updateHermesConfirmMessage:
       "This runs hermes update and restarts the gateway when it finishes. Active sessions keep their prompt cache until then.",
+    updateHermesConfirmMessageWithCommits:
+      "This will run 'hermes update' ({command}) and pull {count} new commits. The gateway restarts when the update finishes; the current session keeps its prompt cache until then.",
     updateHermesConfirmNow: "Update now",
     updateHermesConfirmTitle: "Update Hermes?",
     updatingHermes: "Updating Hermes…",
@@ -236,6 +249,34 @@ export const en: Translations = {
     toolCalls: "tool calls",
     noModelsData: "No model usage data for this period",
     startSession: "Start a session to see model data here",
+    picker: {
+      current: "current: {model}",
+      unknown: "(unknown)",
+      filter: "Filter providers and models…",
+      savesToConfig: "Saves to config.yaml — applies to new sessions.",
+      persistGlobal: "Persist globally (otherwise this session only)",
+      refresh: "Refresh Models",
+      switch: "Switch",
+      switchAnyway: "Switch anyway",
+      expensiveWarning: "Expensive Model Warning",
+      loading: "loading…",
+      noMatches: "no matches",
+      noProviders: "no authenticated providers",
+      pickProvider: "pick a provider →",
+      noModelsMatch: "no models match your filter",
+      noModelsForProvider: "no models listed for this provider",
+      currentLabel: "current",
+      modelCount: "models",
+    },
+    ui: {
+      vision: "Vision", reasoning: "Reasoning", useAs: "Use as", mainModel: "Main model", current: "current", auxiliaryTask: "Auxiliary task", allAuxiliary: "All auxiliary tasks", expensiveWarning: "Expensive Model Warning", switchAnyway: "Switch anyway", cancel: "Cancel", missingProviderModel: "Missing provider/model", expensivePricing: "This model has unusually high known pricing.", auxiliaryTasks: "Auxiliary Tasks", resetAuto: "Reset all to auto", auxiliaryHelp: "Auxiliary tasks handle side-jobs like vision, session search, and compression. auto means \"use the main model\". Override per-task when you want a cheap/fast model for a specific job.", autoMain: "auto (use main model)", providerDefault: "(provider default)", change: "Change", resetAuxTitle: "Reset auxiliary models", resetAuxDescription: "Reset every auxiliary task to 'auto'? This overrides any per-task overrides you've set.", resetAll: "Reset all", selectAux: "Set Auxiliary: {task}", modelSettings: "Model Settings", appliesNewSessions: "applies to new sessions", unset: "(unset)", auxiliarySummary: "{overrides} overrides · {auto} auto", auxiliarySummaryAll: "{count} tasks · all auto", configure: "Configure", moa: "Mixture of Agents", references: "references", notLoaded: "not loaded", presetsTitle: "Configure Mixture of Agents presets", presetsDescription: "Presets appear as models under the Mixture of Agents provider. References produce perspectives; the aggregator is the acting model that answers and calls tools.", setDefault: "Set default", delete: "Delete", newPreset: "new preset name", addPreset: "Add preset", default: "Default:", referenceModels: "Reference models", aggregator: "Aggregator", remove: "Remove", addReference: "Add reference model", save: "Save", saving: "Saving…", selectMoa: "Select MoA Model", noRecursiveMoa: "MoA presets can't reference or aggregate the Mixture of Agents provider (no recursive MoA).", setMain: "Set Main Model", config: "Configuration", cacheRead: "Cache Read", input: "Input", output: "Output", compression: "Compression", imageAnalysis: "Image analysis", contextCompaction: "Context compaction", skillsHub: "Skills Hub", skillSearch: "Skill search", approval: "Approval", smartAutoApprove: "Smart auto-approve", mcpRouting: "MCP tool routing", titleGeneration: "Title Gen", sessionTitles: "Session titles", review: "Review", reviewSubagent: "/review subagent", triageSpecifier: "Triage Specifier", kanbanSpec: "Kanban spec fleshing", decomposer: "Kanban Decomposer", decomposition: "Task decomposition", profileDescriber: "Profile Describer", autoDescriptions: "Auto profile descriptions", curator: "Curator", skillReview: "Skill-usage review", tools: "Tools", cacheReadToken: "Cache read", taskVision: "Vision", hintVision: "Image analysis", taskCompression: "Compression", hintCompression: "Context compaction", taskSkillsHub: "Skills Hub", hintSkillsHub: "Skill search", taskApproval: "Approval", hintApproval: "Smart auto-approve", taskMcp: "MCP", hintMcp: "MCP tool routing", taskTitleGeneration: "Title generation", hintTitleGeneration: "Session titles", taskReview: "Review", hintReview: "Review subagent", taskTriageSpecifier: "Triage Specifier", hintTriageSpecifier: "Kanban spec preparation", taskKanbanDecomposer: "Kanban Decomposer", hintKanbanDecomposer: "Task decomposition", taskProfileDescriber: "Profile Describer", hintProfileDescriber: "Automatic profile descriptions", taskCurator: "Curator", hintCurator: "Skill usage review", tokenCostHidden: "Token and cost analytics are hidden because local totals exclude auxiliary calls (compression, vision, web extraction, etc.) and provider retries, so they differ from your provider bill. Enable dashboard.show_token_analytics in Configuration to show the local debug estimate.",
+    },
+  },
+  mcpUi: {
+    invalidServer: "Invalid MCP server", addedOAuth: "Added — authenticate with OAuth", addDone: "Add ✓", failed: "Failed", restartNote: "Enable/disable takes effect on the next gateway restart.", installingBackground: "Installing in background…", removeTitle: "Remove MCP server", removeDescription: "This will remove the server.", name: "Name", transport: "Transport", httpSse: "HTTP/SSE", authentication: "Authentication", none: "None", bearerToken: "Bearer token", oauth: "OAuth", tokenHint: "Token or Bearer token", command: "Command", args: "Args", adding: "Adding…", add: "Add", installing: "Installing…", install: "Install", connectedNoTools: "Connected — no tools", connectionFailed: "Connection failed", authOAuth: "Authenticate with OAuth", disable: "Disable", enable: "Enable", testConnection: "Test connection", delete: "Delete", installed: "Installed", endpoint: "Endpoint:", runs: "Runs:", installsFrom: "Installs from:", error: "Error:", disabled: "disabled", added: "Added", addServer: "Add MCP server", yourServers: "Your MCP servers", noServers: "No MCP servers configured.", toolCount: "{count} tool(s)", oauthComplete: "OAuth authentication complete", oauthError: "OAuth error:", deleteServer: "Delete:", installedEntry: "Installed:", failedInstall: "Failed to install:", required: "required", addServerButton: "Add Server", installEntry: "Install {name}", requiredValues: "This MCP requires the following values to be configured.", catalog: "Catalog", catalogDescription: "Browse Nous-approved MCP servers and install them with one click.", noCatalog: "No catalog entries available.", source: "source ↗", envVars: "{count} env var(s)", tools: "Tools:", authenticate: "Authenticate", bootstrapCommands: "Bootstrap commands ({count})", setupNotes: "Setup notes", configStoredSecret: "Stored in this profile's .env; config.yaml keeps only an environment-variable reference.", oauthInstruction: "Add the server, then use Authenticate. Hermes opens the OAuth browser on the machine running the Dashboard backend.", environment: "Environment (KEY=VALUE per line)", oauthSuccess: "Added — authenticate with OAuth", stdio: "Standard I/O", http: "HTTP", bearer: "Bearer", apiKey: "API key", sourceName: "Source", authType: "Authentication:", addFailed: "Failed to add:", urlLabel: "URL",
+  },
+  profileBuilderUi: {
+    identity: "Identity", model: "Model", skills: "Skills", mcps: "MCPs", review: "Review", invalidMcp: "Invalid MCP server", invalidName: "Invalid profile name (lowercase, digits, - and _)", newProfile: "New profile", profileName: "Profile name", descriptionOptional: "Description (optional)", descriptionHint: "What this agent profile is for", filterModels: "Filter models…", loadingModels: "Loading models…", filterSkills: "Filter skills…", addFromHub: "Add from the skills hub", searchHubHint: "Search the hub (e.g. linear, hyperliquid)…", searching: "Searching…", search: "Search", addServer: "Add server", serverName: "Server name", enterServerName: "Enter server name", transport: "Transport", mcpTransport: "MCP transport", http: "HTTP", url: "URL", authentication: "Authentication", httpAuth: "HTTP authentication", none: "None", bearerToken: "Bearer token", oauth: "OAuth", tokenHint: "Token or Bearer token", command: "Command", arguments: "Arguments", add: "Add server", name: "Name", description: "Description", defaultLater: "Default (set later)", fullBundle: "Full default bundle", hubSkills: "Hub skills", mcpServers: "MCP servers", noSkills: "None", creating: "Creating…", createProfile: "Create profile", stepIdentity: "Identity", stepModel: "Model", stepSkills: "Skills", stepMcp: "MCP", stepReview: "Review", urlLabel: "URL",
   },
 
   logs: {
@@ -442,6 +483,20 @@ export const en: Translations = {
     currentProfile: "current ({name})",
     managingProfile:
       "Managing profile \u201c{name}\u201d — toggles apply to that profile, not this dashboard\u2019s.",
+    editor: {
+      editTitle: "Edit skill: {name}",
+      newTitle: "New skill",
+      editDescription: "Rewrite this skill's SKILL.md. Frontmatter (name, description) is validated on save.",
+      newDescription: "Author a custom skill — YAML frontmatter plus markdown instructions. It becomes available to the agent and attachable to cron jobs.",
+      name: "Name",
+      nameRequired: "Skill name is required.",
+      categoryOptional: "Category (optional)",
+      contentRequired: "SKILL.md content is required.",
+      loading: "Loading skill…",
+      save: "Save",
+      saving: "Saving…",
+      create: "Create skill",
+    },
   },
 
   config: {
@@ -558,6 +613,43 @@ export const en: Translations = {
 
   language: {
     switchTo: "Switch language",
+  },
+
+  chat: {
+    sessionTokenUnavailable: "Session token unavailable. Open this page through `hermes dashboard`, not directly.",
+    imageUploadFailed: "Image upload failed: {message}",
+    imageUploadedDisconnected: "Image uploaded, but chat is not connected — try again.",
+    authFailed: "Auth failed ({reason}). Reload to refresh the session.",
+    authFailedRefresh: "Auth failed. Reload the page to refresh the session token.",
+    requestOriginMismatch: "Refused: request host/origin doesn't match the dashboard.",
+    websocketUnavailable: "Chat websocket unavailable on this server.",
+    localhostOnly: "Refused: your client isn't permitted (server bound to localhost only).",
+    reconnecting: "Chat is reconnecting.",
+    disconnected: "Chat disconnected.",
+    reconnect: "Reconnect now",
+    sessionEnded: "Session ended.",
+    newSession: "Start new session",
+    copyLastResponse: "Copy last assistant response",
+    responseCopied: "Copied",
+    copyRawMarkdownTitle: "Copy last assistant response as raw markdown",
+    showSidePanel: "Show side panel (model + sessions)",
+    showSidePanelAria: "Show chat side panel",
+    collapseSidePanel: "Collapse chat side panel",
+    panel: "panel",
+    reasoningApplied: "Reasoning effort set to {effort}. Run /new or refresh the page to apply it to this chat.",
+    modelApplied: "Model set to {model}. Run /new or refresh the page to apply it to this chat.",
+    reconnectEventsFeed: "Reconnect events feed",
+    modelSwitchTitle: "Switch model?",
+    modelSwitchDescription: "Switching to {model} starts a fresh chat. Your current chat stays in your Sessions list and the agent's memory is kept. Reload now to apply it?",
+    reload: "Reload",
+  },
+
+  authWidget: {
+    statusUnavailable: "auth status unavailable",
+    loggedInAs: "Logged in as {name}",
+    logout: "Log out",
+    via: "via {provider}",
+    basicProvider: "basic",
   },
 
   theme: {

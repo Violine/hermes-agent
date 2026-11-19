@@ -4480,6 +4480,12 @@ def _has_sticky_block(conn: sqlite3.Connection, task_id: str) -> bool:
     DB manipulation) — preserves the pre-#28712 auto-recover semantics
     for that path.
     """
+    # hermes-team: keep controller-managed blocked cards sticky
+    managed_task = get_task(conn, task_id)
+    if (managed_task is not None
+            and getattr(managed_task, "created_by", None) == "hermes-team-controller"
+            and getattr(managed_task, "status", None) == "blocked"):
+        return True
     row = conn.execute(
         "SELECT kind FROM task_events "
         "WHERE task_id = ? AND kind IN ('blocked', 'unblocked') "
@@ -6379,7 +6385,7 @@ def block_task(
             cur = conn.execute(
                 """
                 UPDATE tasks
-                   SET status        = 'triage',
+                   SET status        = CASE WHEN created_by = 'hermes-team-controller' THEN 'blocked' ELSE 'triage' END,
                        claim_lock    = NULL,
                        claim_expires = NULL,
                        worker_pid    = NULL,
@@ -10717,6 +10723,43 @@ def _retag_legacy_worker_sessions(workspaces_root_path: str) -> None:
         _log.debug("kanban worker: legacy session retag skipped (%s)", exc)
 
 
+# BEGIN hermes-team worker env hardening (managed)
+def _hermes_team_filter_worker_env(env, profile_env):
+    """Drop ambient credential variables before launching team workers."""
+    import re as _re
+    from pathlib import Path as _Path
+
+    try:
+        text = (_Path(profile_env) / ".env").read_text(encoding="utf-8-sig", errors="replace")
+    except OSError:
+        text = ""
+    allowed = set()
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[7:].lstrip()
+        if "=" in line:
+            key = line.split("=", 1)[0].strip()
+            if _re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
+                allowed.add(key)
+
+    secret_name = _re.compile(
+        r"(?:^|_)(?:API_KEY|ACCESS_TOKEN|REFRESH_TOKEN|ID_TOKEN|TOKEN|SECRET|"
+        r"PASSWORD|PASSWD|CREDENTIALS?|AUTHORIZATION|ACCESS_KEY|PRIVATE_KEY)(?:_|$)",
+        _re.IGNORECASE,
+    )
+    short_names = {"GH_TOKEN", "GITHUB_TOKEN", "HF_TOKEN", "HUGGINGFACE_HUB_TOKEN"}
+    return {
+        key: value for key, value in env.items()
+        if key.startswith("HERMES_KANBAN_")
+        or key in allowed
+        or not (key.upper() in short_names or secret_name.search(key))
+    }
+# END hermes-team worker env hardening (managed)
+
+
 def _default_spawn(
     task: Task,
     workspace: str,
@@ -10908,6 +10951,9 @@ def _default_spawn(
     # Use 'a' so a re-run on unblock appends rather than overwrites.
     log_f = open(log_path, "ab")
     try:
+        # hermes-team: filter ambient credentials for team workers
+        if profile_arg.startswith("team-"):
+            env = _hermes_team_filter_worker_env(env, env.get("HERMES_HOME", ""))
         proc = subprocess.Popen(  # noqa: S603 -- argv is a fixed list built above
             cmd,
             cwd=workspace if os.path.isdir(workspace) else None,

@@ -34,6 +34,7 @@ import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatSessionList } from "@/components/ChatSessionList";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { useI18n } from "@/i18n";
+import { generalPageText } from "@/i18n/general-pages";
 import { api } from "@/lib/api";
 import { latchChatActivation } from "@/lib/chat-activation";
 import { copyTextToClipboard } from "@/lib/clipboard";
@@ -175,6 +176,9 @@ function terminalLineHeightForWidth(layoutWidthPx: number): number {
 }
 
 export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
+  const { t, locale } = useI18n();
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
   const hostRef = useRef<HTMLDivElement | null>(null);
   const termWrapRef = useRef<HTMLDivElement | null>(null);
   const termRef = useRef<Terminal | null>(null);
@@ -214,7 +218,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
     typeof window !== "undefined" &&
     !window.__HERMES_SESSION_TOKEN__ &&
     !window.__HERMES_AUTH_REQUIRED__
-      ? "Session token unavailable. Open this page through `hermes dashboard`, not directly."
+      ? (t.chat?.sessionTokenUnavailable ?? "Session token unavailable. Open this page through `hermes dashboard`, not directly.")
       : null,
   );
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
@@ -324,7 +328,6 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
     scope: string;
     title: string | null;
   }>({ scope: "", title: null });
-  const { t } = useI18n();
   const closeMobilePanel = useCallback(() => setMobilePanelOpenRaw(false), []);
   const modelToolsLabel = useMemo(
     () => `${t.app.modelToolsSheetTitle} ${t.app.modelToolsSheetSubtitle}`,
@@ -626,7 +629,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
     const reportImageUploadError = (err: unknown) => {
       const message = err instanceof Error ? err.message : String(err);
       console.warn("[dashboard chat] image upload failed:", message);
-      setBanner(`Image upload failed: ${message}`);
+      setBanner((t.chat?.imageUploadFailed ?? "Image upload failed: {message}").replace("{message}", message));
     };
     const driveImageAttach = async (paths: string[]) => {
       for (const path of paths) {
@@ -634,7 +637,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
         const ws = wsRef.current;
         if (!ws || ws.readyState !== WebSocket.OPEN) {
           setBanner(
-            "Image uploaded, but chat is not connected — try again.",
+            t.chat?.imageUploadedDisconnected ?? "Image uploaded, but chat is not connected — try again.",
           );
           return;
         }
@@ -1355,8 +1358,8 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
         setPtyState("closed");
         setBanner(
           ev.reason
-            ? `Auth failed (${ev.reason}). Reload to refresh the session.`
-            : "Auth failed. Reload the page to refresh the session token.",
+            ? (t.chat?.authFailed ?? "Auth failed ({reason}). Reload to refresh the session.").replace("{reason}", ev.reason)
+            : t.chat?.authFailedRefresh ?? "Auth failed. Reload the page to refresh the session token.",
         );
         return;
       }
@@ -1365,8 +1368,8 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
         setPtyState("closed");
         setBanner(
           ev.reason
-            ? `Refused: ${ev.reason}.`
-            : "Refused: request host/origin doesn't match the dashboard.",
+            ? generalPageText(localeRef.current, "Refused: {reason}.", { reason: ev.reason })
+            : t.chat?.requestOriginMismatch ?? "Refused: request host/origin doesn't match the dashboard.",
         );
         return;
       }
@@ -1374,8 +1377,8 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
         setPtyState("closed");
         setBanner(
           ev.reason
-            ? `Chat websocket unavailable: ${ev.reason}.`
-            : "Chat websocket unavailable on this server.",
+            ? generalPageText(localeRef.current, "Chat websocket unavailable: {reason}.", { reason: ev.reason })
+            : t.chat?.websocketUnavailable ?? "Chat websocket unavailable on this server.",
         );
         return;
       }
@@ -1383,8 +1386,8 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
         setPtyState("closed");
         setBanner(
           ev.reason
-            ? `Refused: ${ev.reason}.`
-            : "Refused: your client isn't permitted (server bound to localhost only).",
+            ? generalPageText(localeRef.current, "Refused: {reason}.", { reason: ev.reason })
+            : t.chat?.localhostOnly ?? "Refused: your client isn't permitted (server bound to localhost only).",
         );
         return;
       }
@@ -1836,17 +1839,17 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
               <div className="flex max-w-[min(28rem,calc(100vw-3rem))] flex-col items-start gap-2 border border-warning/60 bg-black/80 px-3 py-2 text-xs text-warning shadow-lg">
                 <div className="tracking-wide">
                   {ptyState === "reconnecting"
-                    ? "Chat is reconnecting."
-                    : "Chat disconnected."}
+                    ? (t.chat?.reconnecting ?? "Chat is reconnecting.")
+                    : (t.chat?.disconnected ?? "Chat disconnected.")}
                 </div>
                 <Button
                   size="sm"
                   outlined
                   onClick={reconnectPty}
                   prefix={<RotateCcw className="h-4 w-4" />}
-                  aria-label="Reconnect chat"
+                  aria-label={t.chat?.reconnect ?? "Reconnect chat"}
                 >
-                  Reconnect now
+                  {t.chat?.reconnect ?? "Reconnect now"}
                 </Button>
               </div>
             </div>
@@ -1871,14 +1874,14 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
           {ptyState === "ended" && (
             <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-black/60">
               <div className="text-sm tracking-wide text-white/80">
-                Session ended.
+                {t.chat?.sessionEnded ?? "Session ended."}
               </div>
               <Button
                 onClick={startFreshPty}
                 prefix={<RotateCcw className="h-4 w-4" />}
-                aria-label="Start a new chat session"
+                aria-label={t.chat?.newSession ?? "Start a new chat session"}
               >
-                Start new session
+                {t.chat?.newSession ?? "Start new session"}
               </Button>
             </div>
           )}
@@ -1886,8 +1889,8 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
           <Button
             ghost
             onClick={handleCopyLast}
-            title="Copy last assistant response as raw markdown"
-            aria-label="Copy last assistant response"
+            title={t.chat?.copyRawMarkdownTitle ?? "Copy last assistant response as raw markdown"}
+            aria-label={t.chat?.copyLastResponse ?? "Copy last assistant response"}
             className={cn(
               "absolute z-10",
               "normal-case tracking-normal font-normal",
@@ -1903,7 +1906,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
             <span className="inline-flex items-center gap-1.5">
               <Copy className="h-3 w-3 shrink-0" />
               <span className="hidden min-[400px]:inline tracking-wide">
-                {copyState === "copied" ? "copied" : "copy last response"}
+                {copyState === "copied" ? (t.chat?.responseCopied ?? "copied") : (t.chat?.copyLastResponse ?? "copy last response")}
               </span>
             </span>
           </Button>
@@ -1912,8 +1915,8 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
             <Button
               ghost
               onClick={toggleChatPanel}
-              title="Show side panel (model + sessions)"
-              aria-label="Show chat side panel"
+              title={t.chat?.showSidePanel ?? "Show side panel (model + sessions)"}
+              aria-label={t.chat?.showSidePanelAria ?? "Show chat side panel"}
               className={cn(
                 "absolute z-10",
                 "normal-case tracking-normal font-normal",
@@ -1928,7 +1931,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
               <span className="inline-flex items-center gap-1">
                 <PanelRight className="h-3 w-3 shrink-0" />
                 <span className="hidden min-[400px]:inline tracking-wide">
-                  panel
+                  {t.chat?.panel ?? "panel"}
                 </span>
               </span>
             </Button>
@@ -1947,8 +1950,8 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
                 ghost
                 size="icon"
                 onClick={toggleChatPanel}
-                aria-label="Collapse chat side panel"
-                title="Collapse side panel"
+                aria-label={t.chat?.collapseSidePanel ?? "Collapse chat side panel"}
+                title={t.chat?.collapseSidePanel ?? "Collapse chat side panel"}
                 className="text-text-secondary hover:text-midground"
               >
                 <X />

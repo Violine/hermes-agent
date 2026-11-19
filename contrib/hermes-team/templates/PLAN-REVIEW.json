@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "feature_id": "<stable-feature-id>",
+  "plan_sha256": "<controller-hash-of-SPEC-DESIGN-PLAN-snapshot>",
+  "role": "skeptic|test-designer",
+  "assignee": "team-skeptic|team-test-designer",
+  "run_id": "<native-run-id>",
+  "verdict": "pass|changes_requested|blocked",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "info|low|medium|high|critical",
+      "blocking": false,
+      "claim": "<specific plan defect or risk; one claim per finding>",
+      "evidence": "<source path, requirement/task/AC, observed fact or reproducible command>",
+      "requested_change": "<minimal correction, question, or additional evidence needed>"
+    }
+  ]
+}

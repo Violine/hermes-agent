@@ -24,6 +24,8 @@ from agent.credential_persistence import (
 )
 import hermes_cli.auth as auth_mod
 from hermes_cli.auth import (
+    # hermes-team shared Anthropic pool path
+    _credential_pool_auth_file_path,
     CODEX_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
     PROVIDER_REGISTRY,
     _auth_store_lock,
@@ -1479,6 +1481,7 @@ class CredentialPool:
                 else self._sync_anthropic_entry_from_pool_store
             )
             with _auth_store_lock(
+                target_path=_credential_pool_auth_file_path(self.provider),
                 timeout_seconds=self._single_use_refresh_lock_timeout()
             ):
                 synced = sync_entry(entry)

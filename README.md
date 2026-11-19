@@ -3,6 +3,11 @@
 </p>
 
 # Hermes Agent ☤
+
+> **Violine fork — Engineering Team.** Доработки доски, русского интерфейса и
+> командного workflow находятся в ветке `codex/engineering-team-flow`.
+> Состав, база совместимости и порядок работы: [FORK.md](FORK.md).
+
 <p align="center">
   <a href="https://hermes-agent.nousresearch.com/">Hermes Agent</a> | <a href="https://hermes-agent.nousresearch.com/">Hermes Desktop</a>
 </p>

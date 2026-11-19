@@ -14,7 +14,7 @@ import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { Switch } from "@nous-research/ui/ui/components/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Label } from "@nous-research/ui/ui/components/label";
-import { useI18n } from "@/i18n";
+import { useI18n, type Locale } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
 // Level classification is unit-tested in @/lib/log-classify; it prefers the
@@ -34,10 +34,26 @@ const LINE_COLORS: Record<string, string> = {
   debug: "text-text-tertiary",
 };
 
-const formatFilterLabel = (value: string) => value.toUpperCase();
+const FILTER_LABELS: Record<string, string> = {
+  ALL: "Все",
+  DEBUG: "Отладка",
+  INFO: "Информация",
+  WARNING: "Предупреждение",
+  ERROR: "Ошибка",
+  all: "Все",
+  agent: "Агент",
+  errors: "Ошибки",
+  gateway: "Шлюз",
+  tools: "Инструменты",
+  cli: "CLI",
+  cron: "Cron",
+};
 
-const toSegmentOptions = <T extends string>(values: readonly T[]) =>
-  values.map((v) => ({ value: v, label: formatFilterLabel(v) }));
+const formatFilterLabel = (value: string, locale: Locale) =>
+  locale === "ru" ? (FILTER_LABELS[value] ?? value.toUpperCase()) : value.toUpperCase();
+
+const toSegmentOptions = <T extends string>(values: readonly T[], locale: Locale) =>
+  values.map((v) => ({ value: v, label: formatFilterLabel(v, locale) }));
 
 const filterGroupClass =
   "flex min-w-0 w-full flex-col items-start gap-1.5 sm:w-auto sm:max-w-full sm:flex-row sm:items-center";
@@ -56,7 +72,7 @@ export default function LogsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { setAfterTitle, setEnd } = usePageHeader();
 
   const fetchLogs = useCallback(() => {
@@ -80,8 +96,8 @@ export default function LogsPage() {
     setAfterTitle(
       <span className="flex items-center gap-1.5">
         <Badge tone="secondary" className="text-xs">
-          {formatFilterLabel(file)} · {formatFilterLabel(level)} ·{" "}
-          {formatFilterLabel(component)}
+          {formatFilterLabel(file, locale)} · {formatFilterLabel(level, locale)} ·{" "}
+          {formatFilterLabel(component, locale)}
         </Badge>
         <Button
           type="button"
@@ -132,6 +148,7 @@ export default function LogsPage() {
     t.common.refresh,
     t.logs.autoRefresh,
     fetchLogs,
+    locale,
   ]);
 
   useEffect(() => {
@@ -157,7 +174,7 @@ export default function LogsPage() {
             className={segmentedClass}
             value={file}
             onChange={setFile}
-            options={toSegmentOptions(FILES)}
+            options={toSegmentOptions(FILES, locale)}
           />
         </FilterGroup>
 
@@ -166,7 +183,7 @@ export default function LogsPage() {
             className={segmentedClass}
             value={level}
             onChange={setLevel}
-            options={toSegmentOptions(LEVELS)}
+            options={toSegmentOptions(LEVELS, locale)}
           />
         </FilterGroup>
 
@@ -175,7 +192,7 @@ export default function LogsPage() {
             className={segmentedClass}
             value={component}
             onChange={setComponent}
-            options={toSegmentOptions(COMPONENTS)}
+            options={toSegmentOptions(COMPONENTS, locale)}
           />
         </FilterGroup>
 

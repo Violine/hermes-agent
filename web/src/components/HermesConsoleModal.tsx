@@ -1,3 +1,4 @@
+import { useComponentCopy } from "@/i18n/component-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FitAddon } from "@xterm/addon-fit";
@@ -99,6 +100,7 @@ function isPrintable(data: string): boolean {
 }
 
 export function HermesConsoleModal({ open, onClose }: HermesConsoleModalProps) {
+  const copy = useComponentCopy();
   const modalRef = useModalBehavior({ open, onClose });
   const hostRef = useRef<HTMLDivElement | null>(null);
   const termRef = useRef<XtermTerminal | null>(null);
@@ -507,10 +509,10 @@ export function HermesConsoleModal({ open, onClose }: HermesConsoleModalProps) {
               id="hermes-console-title"
               className="font-mondwest text-display text-base tracking-wider"
             >
-              Hermes Console
+              {copy("Hermes Console")}
             </h2>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <Badge tone={statusTone}>{connectionState}</Badge>
+              <Badge tone={statusTone}>{copy(connectionState)}</Badge>
               <span className="font-mono">{consoleProfile}</span>
             </div>
           </div>
@@ -519,7 +521,7 @@ export function HermesConsoleModal({ open, onClose }: HermesConsoleModalProps) {
             size="icon"
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground"
-            aria-label="Close console"
+            aria-label={copy("Close console")}
           >
             <X />
           </Button>

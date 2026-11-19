@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+export PYTHONPATH=/home/alex/.hermes/team/runtime
+case "${1:-}" in
+  submit|status|result|run) ;;
+  *) set -- run "$@" ;;
+esac
+exec /home/alex/.hermes/hermes-agent/venv/bin/python -m team_engine.backend_test_jobs "$@"

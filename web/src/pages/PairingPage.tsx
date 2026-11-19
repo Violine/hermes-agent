@@ -4,6 +4,8 @@ import { Badge } from "@nous-research/ui/ui/components/badge";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { H2 } from "@nous-research/ui/ui/components/typography/h2";
+import { useI18n } from "@/i18n";
+import { pageText } from "@/i18n/extended-pages";
 import { api } from "@/lib/api";
 import type { PairingResponse, PairingUser } from "@/lib/api";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
@@ -28,6 +30,8 @@ function getUserLabel(user: PairingUser): string {
 }
 
 export default function PairingPage() {
+  const { locale } = useI18n();
+  const tx = useCallback((english: string, values?: Record<string, string | number>) => pageText(locale, english, values), [locale]);
   const [pending, setPending] = useState<PairingUser[]>([]);
   const [approved, setApproved] = useState<PairingUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,9 +47,9 @@ export default function PairingPage() {
         setPending(res.pending);
         setApproved(res.approved);
       })
-      .catch(() => showToast("Failed to load pairing requests", "error"))
+      .catch(() => showToast(tx("Failed to load pairing requests"), "error"))
       .finally(() => setLoading(false));
-  }, [showToast]);
+  }, [showToast, tx]);
 
   useEffect(() => {
     loadPairing();
@@ -53,31 +57,31 @@ export default function PairingPage() {
 
   const handleApprove = async (user: PairingUser) => {
     if (!user.request_id) {
-      showToast("Missing pairing request", "error");
+      showToast(tx("Missing pairing request"), "error");
       return;
     }
     const key = getUserKey(user);
     setApproving(key);
     try {
       await api.approvePairing(user.platform, user.request_id);
-      showToast(`Approved: "${getUserLabel(user)}"`, "success");
+      showToast(tx("Approved: \"{name}\"", { name: getUserLabel(user) }), "success");
       loadPairing();
     } catch (e) {
-      showToast(`Error: ${e}`, "error");
+      showToast(tx("Error: {error}", { error: String(e) }), "error");
     } finally {
       setApproving(null);
     }
   };
 
   const handleClearPending = async () => {
-    if (!window.confirm("Clear all pending pairing requests?")) return;
+    if (!window.confirm(tx("Clear all pending pairing requests?"))) return;
     setClearing(true);
     try {
       const res = await api.clearPendingPairing();
-      showToast(`Cleared ${res.cleared} pending request(s)`, "success");
+      showToast(tx("Cleared {count} pending request(s)", { count: res.cleared }), "success");
       loadPairing();
     } catch (e) {
-      showToast(`Error: ${e}`, "error");
+      showToast(tx("Error: {error}", { error: String(e) }), "error");
     } finally {
       setClearing(false);
     }
@@ -91,16 +95,16 @@ export default function PairingPage() {
         try {
           await api.revokePairing(platform, user_id);
           showToast(
-            `Revoked: "${user ? getUserLabel(user) : user_id}"`,
+            tx("Revoked: \"{name}\"", { name: user ? getUserLabel(user) : user_id }),
             "success",
           );
           loadPairing();
         } catch (e) {
-          showToast(`Error: ${e}`, "error");
+          showToast(tx("Error: {error}", { error: String(e) }), "error");
           throw e;
         }
       },
-      [approved, loadPairing, showToast],
+      [approved, loadPairing, showToast, tx],
     ),
   });
 
@@ -114,7 +118,7 @@ export default function PairingPage() {
         disabled={clearing}
         prefix={clearing ? <Spinner /> : <Trash2 className="h-4 w-4" />}
       >
-        Clear pending
+        {tx("Clear pending")}
       </Button>,
     );
     return () => {
@@ -143,13 +147,13 @@ export default function PairingPage() {
         open={userRevoke.isOpen}
         onCancel={userRevoke.cancel}
         onConfirm={userRevoke.confirm}
-        title="Revoke access"
+        title={tx("Revoke access")}
         description={
           pendingRevokeUser
-            ? `"${getUserLabel(pendingRevokeUser)}" will lose access. This cannot be undone.`
-            : "This user will lose access. This cannot be undone."
+            ? tx("\"{name}\" will lose access. This cannot be undone.", { name: getUserLabel(pendingRevokeUser) })
+            : tx("This user will lose access. This cannot be undone.")
         }
-        confirmLabel="Revoke"
+        confirmLabel={tx("Revoke")}
         loading={userRevoke.isDeleting}
       />
 
@@ -160,13 +164,13 @@ export default function PairingPage() {
           className="flex items-center gap-2 text-muted-foreground"
         >
           <Users className="h-4 w-4" />
-          Pending requests ({pending.length})
+          {tx("Pending requests ({count})", { count: pending.length })}
         </H2>
 
         {pending.length === 0 && (
           <Card>
             <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              No pending pairing requests
+              {tx("No pending pairing requests")}
             </CardContent>
           </Card>
         )}
@@ -186,7 +190,7 @@ export default function PairingPage() {
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="truncate">{user.user_id}</span>
                     {typeof user.age_minutes === "number" && (
-                      <span>{user.age_minutes}m ago</span>
+                      <span>{tx("{count}m ago", { count: user.age_minutes })}</span>
                     )}
                   </div>
                 </div>
@@ -205,7 +209,7 @@ export default function PairingPage() {
                       )
                     }
                   >
-                    Approve
+                    {tx("Approve")}
                   </Button>
                 </div>
               </CardContent>
@@ -221,13 +225,13 @@ export default function PairingPage() {
           className="flex items-center gap-2 text-muted-foreground"
         >
           <ShieldCheck className="h-4 w-4" />
-          Approved users ({approved.length})
+          {tx("Approved users ({count})", { count: approved.length })}
         </H2>
 
         {approved.length === 0 && (
           <Card>
             <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              No approved users
+              {tx("No approved users")}
             </CardContent>
           </Card>
         )}
@@ -255,8 +259,8 @@ export default function PairingPage() {
                   <Button
                     ghost
                     size="icon"
-                    title="Revoke"
-                    aria-label="Revoke"
+                    title={tx("Revoke")}
+                    aria-label={tx("Revoke")}
                     className="text-destructive"
                     onClick={() => userRevoke.requestDelete(key)}
                   >

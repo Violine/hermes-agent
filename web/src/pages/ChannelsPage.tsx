@@ -36,6 +36,8 @@ import type {
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { cn, themedBody } from "@/lib/utils";
+import { useI18n } from "@/i18n";
+import { pageText } from "@/i18n/extended-pages";
 
 // State → badge mapping. The backend emits a small, fixed vocabulary plus
 // whatever the live gateway runtime reports (connected/disconnected/fatal).
@@ -53,8 +55,9 @@ const STATE_BADGE: Record<
   fatal: { tone: "destructive", label: "Error" },
 };
 
-function stateBadge(state: string) {
-  return STATE_BADGE[state] ?? { tone: "outline" as const, label: state };
+function stateBadge(state: string, locale: import("@/i18n/types").Locale) {
+  const badge = STATE_BADGE[state] ?? { tone: "outline" as const, label: state };
+  return { ...badge, label: pageText(locale, badge.label) };
 }
 
 const TELEGRAM_USER_ID_RE = /^\d+$/;
@@ -130,6 +133,8 @@ function normalizeWhatsAppMode(mode: unknown): "bot" | "self-chat" | null {
 }
 
 export default function ChannelsPage() {
+  const { locale } = useI18n();
+  const tx = useCallback((english: string, values?: Record<string, string | number>) => pageText(locale, english, values), [locale]);
   const [platforms, setPlatforms] = useState<MessagingPlatform[]>([]);
   const [envPath, setEnvPath] = useState("~/.hermes/.env");
   const [gatewayStartCommand, setGatewayStartCommand] = useState(
@@ -166,8 +171,8 @@ export default function ChannelsPage() {
         setEnvPath(res.env_path || "~/.hermes/.env");
         setGatewayStartCommand(res.gateway_start_command || "hermes gateway start");
       })
-      .catch((e) => showToast(`Error: ${e}`, "error"));
-  }, [showToast]);
+      .catch((e) => showToast(tx("Error: {error}", { error: String(e) }), "error"));
+  }, [showToast, tx]);
 
   useEffect(() => {
     load().finally(() => setLoading(false));
@@ -192,7 +197,7 @@ export default function ChannelsPage() {
       if (v.trim()) env[k] = v.trim();
     });
     if (Object.keys(env).length === 0) {
-      showToast("Nothing to save — fill in at least one field.", "error");
+      showToast(tx("Nothing to save — fill in at least one field."), "error");
       return;
     }
     const missing = editing.env_vars.filter(
@@ -209,7 +214,7 @@ export default function ChannelsPage() {
     });
     if (Object.keys(nextFieldErrors).length > 0) {
       setFieldErrors(nextFieldErrors);
-      showToast("Fix the highlighted fields before saving.", "error");
+      showToast(tx("Fix the highlighted fields before saving."), "error");
       return;
     }
     setSaving(true);
@@ -221,7 +226,7 @@ export default function ChannelsPage() {
       setRestartNeeded(true);
       await load();
     } catch (e) {
-      showToast(`Failed to save: ${e}`, "error");
+      showToast(tx("Failed to save: {error}", { error: String(e) }), "error");
     } finally {
       setSaving(false);
     }
@@ -241,7 +246,7 @@ export default function ChannelsPage() {
       );
       setRestartNeeded(true);
     } catch (e) {
-      showToast(`Error: ${e}`, "error");
+      showToast(tx("Error: {error}", { error: String(e) }), "error");
     } finally {
       setTogglingId(null);
     }
@@ -253,7 +258,7 @@ export default function ChannelsPage() {
       const res = await api.testMessagingPlatform(platform.id);
       showToast(`${platform.name}: ${res.message}`, res.ok ? "success" : "error");
     } catch (e) {
-      showToast(`Error: ${e}`, "error");
+      showToast(tx("Error: {error}", { error: String(e) }), "error");
     } finally {
       setTestingId(null);
     }
@@ -263,12 +268,12 @@ export default function ChannelsPage() {
     setRestarting(true);
     try {
       await api.restartGateway();
-      showToast("Gateway restarting…", "success");
+      showToast(tx("Gateway restarting…"), "success");
       setRestartNeeded(false);
       // Give the gateway a moment to come up, then refresh status.
       setTimeout(() => void load(), 4000);
     } catch (e) {
-      showToast(`Failed to restart: ${e}`, "error");
+      showToast(tx("Failed to restart: {error}", { error: String(e) }), "error");
     } finally {
       setRestarting(false);
     }
@@ -283,7 +288,7 @@ export default function ChannelsPage() {
         disabled={restarting}
         prefix={restarting ? <Spinner /> : <RotateCw className="h-4 w-4" />}
       >
-        {restarting ? "Restarting…" : "Restart gateway"}
+        {restarting ? tx("Restarting…") : tx("Restart gateway")}
       </Button>,
     );
     return () => setEnd(null);
@@ -314,7 +319,7 @@ export default function ChannelsPage() {
             <div className="flex items-center gap-2 text-sm">
               <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
               <span>
-                Changes are saved. Restart the gateway for them to take effect.
+                {tx("Changes are saved. Restart the gateway for them to take effect.")}
               </span>
             </div>
             <Button
@@ -324,7 +329,7 @@ export default function ChannelsPage() {
               disabled={restarting}
               prefix={restarting ? <Spinner /> : <RotateCw className="h-4 w-4" />}
             >
-              {restarting ? "Restarting…" : "Restart now"}
+              {restarting ? tx("Restarting…") : tx("Restart now")}
             </Button>
           </CardContent>
         </Card>
@@ -335,18 +340,14 @@ export default function ChannelsPage() {
           <CardContent className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
             <WifiOff className="h-4 w-4 shrink-0" />
             <span>
-              The gateway is not running. Configure channels here, then start the
-              gateway with <code className="font-courier">{gatewayStartCommand}</code>{" "}
-              (or the Restart button above).
+              {tx("The gateway is not running. Configure channels here, then start the gateway with {command} (or the Restart button above).", { command: gatewayStartCommand })}
             </span>
           </CardContent>
         </Card>
       )}
 
       <p className="text-xs text-muted-foreground">
-        {configured} of {platforms.length} channels configured. Credentials are
-        written to <code className="font-courier">{envPath}</code>; the
-        gateway connects each enabled channel on its next restart.
+        {tx("{count} of {total} channels configured.", { count: configured, total: platforms.length })} {tx("Credentials are written to")} <code className="font-courier">{envPath}</code>; {tx("the gateway connects each enabled channel on its next restart.")}
       </p>
 
       {/* Config modal */}
@@ -374,7 +375,7 @@ export default function ChannelsPage() {
               size="icon"
               onClick={() => setEditing(null)}
               className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
-              aria-label="Close"
+              aria-label={tx("Close")}
             >
               <X />
             </Button>
@@ -385,8 +386,8 @@ export default function ChannelsPage() {
                 className="font-mondwest text-display text-base tracking-wider"
               >
                 {editing.id === "telegram"
-                  ? "Use your own Telegram bot"
-                  : `Configure ${editing.name}`}
+                  ? tx("Use your own Telegram bot")
+                  : tx("Configure {name}", { name: editing.name })}
               </h2>
               {editing.docs_url && (
                 <a
@@ -395,7 +396,7 @@ export default function ChannelsPage() {
                   rel="noopener noreferrer"
                   className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
                 >
-                  {editing.id === "telegram" ? "BotFather guide" : "Setup guide"}
+                  {editing.id === "telegram" ? tx("BotFather guide") : tx("Setup guide")}
                   <ExternalLink className="h-3 w-3" />
                 </a>
               )}
@@ -405,20 +406,17 @@ export default function ChannelsPage() {
               {editing.id === "telegram" && (
                 <div className="grid gap-3 text-sm text-muted-foreground">
                   <p>
-                    Connect a bot you already own, or create one in Telegram before
-                    filling in this form.
+                    {tx("Connect a bot you already own, or create one in Telegram before filling in this form.")}
                   </p>
                   <ol className="grid list-decimal gap-1.5 pl-5">
                     <li>
-                      Open <span className="text-foreground">@BotFather</span>, send
+                      {tx("Open")} <span className="text-foreground">@BotFather</span>, {tx("send")}
                       <code className="mx-1 font-courier text-xs">/newbot</code>, and
-                      follow its prompts.
+                      {tx("follow its prompts.")}
                     </li>
-                    <li>Copy the complete bot token BotFather gives you.</li>
+                    <li>{tx("Copy the complete bot token BotFather gives you.")}</li>
                     <li>
-                      Message <span className="text-foreground">@userinfobot</span> to
-                      find your numeric Telegram user ID, then add it below for
-                      immediate access.
+                      {tx("Message")} <span className="text-foreground">@userinfobot</span> {tx("to find your numeric Telegram user ID, then add it below for immediate access.")}
                     </li>
                   </ol>
                   <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs">
@@ -440,8 +438,7 @@ export default function ChannelsPage() {
                     </a>
                   </div>
                   <p className="text-xs">
-                    You can leave allowed users blank. Hermes will then send new DM
-                    users a code that you approve from the Pairing page.
+                    {tx("You can leave allowed users blank. Hermes will then send new DM users a code that you approve from the Pairing page.")}
                   </p>
                 </div>
               )}
@@ -508,7 +505,7 @@ export default function ChannelsPage() {
                   className="w-full sm:w-auto"
                   onClick={() => setEditing(null)}
                 >
-                  Cancel
+                  {tx("Cancel")}
                 </Button>
                 <Button
                   className="w-full uppercase sm:w-auto"
@@ -517,7 +514,7 @@ export default function ChannelsPage() {
                   disabled={saving}
                   prefix={saving ? <Spinner /> : undefined}
                 >
-                  {saving ? "Saving…" : "Save & enable"}
+                  {saving ? tx("Saving…") : tx("Save & enable")}
                 </Button>
               </div>
             </div>
@@ -528,7 +525,7 @@ export default function ChannelsPage() {
       {/* Platform list */}
       <div className="grid gap-3">
         {platforms.map((platform) => {
-          const badge = stateBadge(platform.state);
+          const badge = stateBadge(platform.state, locale);
           const busy = togglingId === platform.id;
           const StateIcon =
             platform.state === "connected"
@@ -578,7 +575,7 @@ export default function ChannelsPage() {
                         <Switch
                           checked={platform.enabled}
                           onCheckedChange={() => void handleToggle(platform)}
-                          aria-label={`Enable ${platform.name}`}
+                          aria-label={tx("Enable {name}", { name: platform.name })}
                         />
                       )}
                     </div>
@@ -595,7 +592,7 @@ export default function ChannelsPage() {
                         )
                       }
                     >
-                      Test
+                      {tx("Test")}
                     </Button>
                     {platform.id !== "telegram" && (
                       <Button
@@ -604,7 +601,7 @@ export default function ChannelsPage() {
                         onClick={() => openConfig(platform)}
                         prefix={<Settings2 className="h-4 w-4" />}
                       >
-                        Configure
+                        {tx("Configure")}
                       </Button>
                     )}
                   </div>
@@ -650,6 +647,8 @@ function WhatsAppOnboardingPanel({
   setRestartNeeded: (needed: boolean) => void;
   showToast: (message: string, type: "success" | "error") => void;
 }) {
+  const { locale } = useI18n();
+  const tx = useCallback((english: string, values?: Record<string, string | number>) => pageText(locale, english, values), [locale]);
   const configuredMode = useMemo(
     () => normalizeWhatsAppMode(platform.whatsapp_setup?.mode),
     [platform.whatsapp_setup?.mode],
@@ -704,7 +703,7 @@ function WhatsAppOnboardingPanel({
           return;
         }
         if (status.status === "error") {
-          setError(status.error || "WhatsApp setup failed.");
+          setError(status.error || tx("WhatsApp setup failed."));
           setSetup(null);
           setQrDataUrl("");
           setPhase("idle");
@@ -721,10 +720,10 @@ function WhatsAppOnboardingPanel({
           setSetup(null);
           setQrDataUrl("");
           setPhase("idle");
-          setError("WhatsApp QR setup expired. Start a new QR setup to try again.");
+          setError(tx("WhatsApp QR setup expired. Start a new QR setup to try again."));
           return;
         }
-        setError(`Still waiting for WhatsApp. Retrying after: ${pollError}`);
+        setError(tx("Still waiting for WhatsApp. Retrying after: {error}", { error: String(pollError) }));
         timeout = setTimeout(poll, 2000);
       }
     };
@@ -734,7 +733,7 @@ function WhatsAppOnboardingPanel({
       cancelled = true;
       if (timeout) clearTimeout(timeout);
     };
-  }, [phase, setup, updateQr]);
+  }, [phase, setup, updateQr, tx]);
 
   useEffect(() => {
     if (!setup) return;
@@ -763,7 +762,7 @@ function WhatsAppOnboardingPanel({
         await updateQr(res.qr_payload);
       }
       if (res.status === "error") {
-        setError(res.error || "WhatsApp setup failed.");
+        setError(res.error || tx("WhatsApp setup failed."));
         setSetup(null);
         setPhase("idle");
       } else {
@@ -817,14 +816,14 @@ function WhatsAppOnboardingPanel({
       });
       resetSetup();
       if (result.restart_started) {
-        showToast("WhatsApp saved; gateway restarting…", "success");
+        showToast(tx("WhatsApp saved; gateway restarting…"), "success");
         setRestartNeeded(false);
         setTimeout(() => void onChanged(), 4000);
         void watchRestartOutcome();
       } else {
         onRestartNeeded();
         const detail = result.restart_error ? `: ${result.restart_error}` : "";
-        showToast(`WhatsApp saved; gateway restart failed${detail}`, "error");
+        showToast(tx("Gateway restart failed{detail}", { detail }), "error");
       }
       await onChanged();
     } catch (applyError) {
@@ -841,41 +840,41 @@ function WhatsAppOnboardingPanel({
   );
   const setupStatusLabel =
     setup?.status === "installing"
-      ? "preparing"
+      ? tx("preparing")
       : setup?.status === "starting"
-        ? "starting"
-        : "waiting";
+        ? tx("starting")
+        : tx("waiting");
   const setupHelp =
     phase === "connected" || phase === "applying"
-      ? "WhatsApp is linked but Hermes is not listening yet. Save and restart the gateway to finish setup."
+      ? tx("WhatsApp is linked but Hermes is not listening yet. Save and restart the gateway to finish setup.")
       : setup?.status === "installing"
-        ? "Preparing the WhatsApp bridge. The QR code will appear here when it is ready."
+        ? tx("Preparing the WhatsApp bridge. The QR code will appear here when it is ready.")
         : setup?.status === "starting"
-          ? "Starting the WhatsApp pairing bridge. The QR code will appear here when it is ready."
-          : "Open WhatsApp on your phone, then go to Linked Devices and scan from there. This QR is not a browser URL.";
+          ? tx("Starting the WhatsApp pairing bridge. The QR code will appear here when it is ready.")
+          : tx("Open WhatsApp on your phone, then go to Linked Devices and scan from there. This QR is not a browser URL.");
   const linkedAccountLabel = setup?.account_phone
     ? `+${setup.account_phone}`
     : setup?.account_name || setup?.account_id || "";
   const linkedAccountDetail =
     setup?.account_phone || setup?.account_id
-      ? "This is the WhatsApp account Hermes is now logged into."
-      : "Hermes is logged into the WhatsApp account that scanned the QR code.";
+      ? tx("This is the WhatsApp account Hermes is now logged into.")
+      : tx("Hermes is logged into the WhatsApp account that scanned the QR code.");
   const linkedAccountChatUrl = setup?.account_phone
     ? `https://wa.me/${setup.account_phone}`
     : "";
   const messageInstruction =
     mode === "self-chat"
-      ? "After the restart, open Message Yourself on the linked account and send Hermes a message."
-      : "After the restart, start a chat from another WhatsApp account with the linked account and send Hermes a message.";
+      ? tx("After the restart, open Message Yourself on the linked account and send Hermes a message.")
+      : tx("After the restart, start a chat from another WhatsApp account with the linked account and send Hermes a message.");
   const hasSavedAllowedUsers = Boolean(platform.whatsapp_setup?.allowed_users_set);
   const pairingInstruction =
     mode === "self-chat" && !allowedUsers.trim()
       ? hasSavedAllowedUsers
-        ? "Hermes will keep the saved WhatsApp allowlist."
-        : "Self-chat mode will allow the linked account automatically when you save."
+        ? tx("Hermes will keep the saved WhatsApp allowlist.")
+        : tx("Self-chat mode will allow the linked account automatically when you save.")
       : !allowedUsers.trim() && hasSavedAllowedUsers
-        ? "Hermes will keep the saved WhatsApp allowlist."
-        : "If no allowed numbers were entered, Hermes replies with a pairing code. Approve it from the dashboard Pairing page.";
+        ? tx("Hermes will keep the saved WhatsApp allowlist.")
+        : tx("If no allowed numbers were entered, Hermes replies with a pairing code. Approve it from the dashboard Pairing page.");
 
   return (
     <div className="rounded-sm border border-border bg-background/35 p-4">
@@ -888,11 +887,11 @@ function WhatsAppOnboardingPanel({
             disabled={phase === "starting" || phase === "waiting" || phase === "applying"}
             prefix={phase === "starting" ? <Spinner /> : <QrCode className="h-4 w-4" />}
           >
-            {phase === "starting" ? "Starting…" : "Pair with QR"}
+            {phase === "starting" ? tx("Starting…") : tx("Pair with QR")}
           </Button>
           {platform.configured && (
             <span className="text-xs text-muted-foreground">
-              Existing WhatsApp settings are configured.
+              {tx("Existing WhatsApp settings are configured.")}
             </span>
           )}
         </div>
@@ -900,7 +899,7 @@ function WhatsAppOnboardingPanel({
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
           <div className="grid gap-1.5">
             <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
-              Mode
+              {tx("Mode")}
             </span>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -909,7 +908,7 @@ function WhatsAppOnboardingPanel({
                 onClick={() => setMode("bot")}
                 disabled={phase === "waiting" || phase === "applying"}
               >
-                Bot
+                {tx("Bot")}
               </Button>
               <Button
                 size="sm"
@@ -917,12 +916,12 @@ function WhatsAppOnboardingPanel({
                 onClick={() => setMode("self-chat")}
                 disabled={phase === "waiting" || phase === "applying"}
               >
-                Self-chat
+                {tx("Self-chat")}
               </Button>
             </div>
           </div>
           <div className="grid min-w-0 flex-1 gap-1.5">
-            <Label htmlFor="whatsapp-allowed-users">Allowed WhatsApp numbers</Label>
+            <Label htmlFor="whatsapp-allowed-users">{tx("Allowed WhatsApp numbers")}</Label>
             <Input
               id="whatsapp-allowed-users"
               value={allowedUsers}
@@ -944,7 +943,7 @@ function WhatsAppOnboardingPanel({
             <div className="grid gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 {phase === "connected" || phase === "applying" ? (
-                  <Badge tone="success">Connected</Badge>
+                  <Badge tone="success">{tx("Connected")}</Badge>
                 ) : (
                   <Badge tone="warning">{setupStatusLabel}</Badge>
                 )}
@@ -957,8 +956,7 @@ function WhatsAppOnboardingPanel({
 
               {phase === "waiting" && (
                 <div className="text-xs text-muted-foreground">
-                  After saving, unknown DMs use Hermes pairing codes unless their
-                  number is already allowed.
+                  {tx("After saving, unknown DMs use Hermes pairing codes unless their number is already allowed.")}
                 </div>
               )}
 
@@ -967,12 +965,12 @@ function WhatsAppOnboardingPanel({
                   <div className="border border-border bg-background/45 p-3 text-sm">
                     <div className="font-medium">
                       {linkedAccountLabel
-                        ? `Linked as ${linkedAccountLabel}`
-                        : "WhatsApp device linked"}
+                        ? tx("Linked as {name}", { name: linkedAccountLabel })
+                        : tx("WhatsApp device linked")}
                     </div>
                     <div className="mt-1 text-muted-foreground">{linkedAccountDetail}</div>
                     <ol className="mt-3 list-decimal space-y-1 pl-5 text-muted-foreground">
-                      <li>Save and restart the gateway.</li>
+                      <li>{tx("Save and restart")}</li>
                       <li>{messageInstruction}</li>
                       <li>{pairingInstruction}</li>
                     </ol>
@@ -983,7 +981,7 @@ function WhatsAppOnboardingPanel({
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Open chat link
+                        {tx("Open chat link")}
                         <ExternalLink className="h-3.5 w-3.5" />
                       </a>
                     )}
@@ -996,10 +994,10 @@ function WhatsAppOnboardingPanel({
                       disabled={phase === "applying"}
                       prefix={phase === "applying" ? <Spinner /> : <Save className="h-4 w-4" />}
                     >
-                      {phase === "applying" ? "Saving…" : "Save and restart"}
+                      {phase === "applying" ? tx("Saving…") : tx("Save and restart")}
                     </Button>
                     <Button size="sm" ghost onClick={() => void cancel()}>
-                      Cancel
+                      {tx("Cancel")}
                     </Button>
                   </div>
                 </div>
@@ -1010,31 +1008,31 @@ function WhatsAppOnboardingPanel({
               {qrDataUrl ? (
                 <img
                   src={qrDataUrl}
-                  alt="WhatsApp setup QR code"
+                  alt={tx("WhatsApp setup QR code")}
                   className="h-60 w-60 bg-white p-2"
                 />
               ) : phase === "connected" || phase === "applying" ? (
                 <div className="flex h-60 w-60 flex-col items-center justify-center gap-2 border border-border bg-background/50 p-4 text-center">
-                  <Badge tone="success">Linked</Badge>
+                  <Badge tone="success">{tx("Linked")}</Badge>
                   <div className="text-sm text-muted-foreground">
-                    {linkedAccountLabel || "Existing WhatsApp session found"}
+                    {linkedAccountLabel || tx("Existing WhatsApp session found")}
                   </div>
                 </div>
               ) : (
                 <div className="flex h-60 w-60 flex-col items-center justify-center gap-3 border border-border bg-background/50 p-4 text-center">
                   <Spinner className="text-2xl" />
                   <div className="text-xs text-muted-foreground">
-                    Waiting for WhatsApp to provide a QR code…
+                    {tx("Waiting for WhatsApp to provide a QR code…")}
                   </div>
                 </div>
               )}
               {phase === "waiting" && (
                 <span className="text-center text-xs text-muted-foreground">
-                  Scan with WhatsApp Linked Devices, not the camera app.
+                  {tx("Scan with WhatsApp Linked Devices, not the camera app.")}
                 </span>
               )}
               <Button size="sm" ghost onClick={() => void cancel()}>
-                Cancel
+                {tx("Cancel")}
               </Button>
             </div>
           </div>
@@ -1059,6 +1057,8 @@ function TelegramOnboardingPanel({
   setRestartNeeded: (needed: boolean) => void;
   showToast: (message: string, type: "success" | "error") => void;
 }) {
+  const { locale } = useI18n();
+  const tx = useCallback((english: string, values?: Record<string, string | number>) => pageText(locale, english, values), [locale]);
   const [setup, setSetup] = useState<TelegramOnboardingStartResponse | null>(
     null,
   );
@@ -1107,11 +1107,11 @@ function TelegramOnboardingPanel({
           setSetup(null);
           setQrDataUrl("");
           setPhase("idle");
-          setError("Telegram pairing expired. Start a new QR setup to try again.");
+          setError(tx("Telegram pairing expired. Start a new QR setup to try again."));
           return;
         }
 
-        setError(`Still waiting for Telegram. Retrying after: ${pollError}`);
+        setError(tx("Still waiting for Telegram. Retrying after: {error}", { error: String(pollError) }));
         timeout = setTimeout(poll, 2000);
       }
     };
@@ -1121,7 +1121,7 @@ function TelegramOnboardingPanel({
       cancelled = true;
       if (timeout) clearTimeout(timeout);
     };
-  }, [phase, setup]);
+  }, [phase, setup, tx]);
 
   useEffect(() => {
     if (!setup) return;
@@ -1177,7 +1177,7 @@ function TelegramOnboardingPanel({
   const addAllowedId = () => {
     const trimmed = newAllowedId.trim();
     if (!TELEGRAM_USER_ID_RE.test(trimmed)) {
-      setError("Allowed Telegram user IDs must be numeric.");
+      setError(tx("Allowed Telegram user IDs must be numeric."));
       return;
     }
     setError("");
@@ -1214,7 +1214,7 @@ function TelegramOnboardingPanel({
   const apply = async () => {
     if (!setup) return;
     if (allowedIds.length === 0) {
-      setError("Add at least one allowed Telegram user ID.");
+      setError(tx("Add at least one allowed Telegram user ID."));
       return;
     }
     setPhase("applying");
@@ -1225,24 +1225,24 @@ function TelegramOnboardingPanel({
       });
       resetSetup();
       if (result.restart_started) {
-        showToast("Telegram saved; gateway restarting…", "success");
+        showToast(tx("Telegram saved; gateway restarting…"), "success");
         setRestartNeeded(false);
         setTimeout(() => void onChanged(), 4000);
         void watchRestartOutcome();
       } else if (result.restart_started === undefined && result.needs_restart) {
         try {
           await api.restartGateway();
-          showToast("Telegram saved; gateway restarting…", "success");
+          showToast(tx("Telegram saved; gateway restarting…"), "success");
           setRestartNeeded(false);
           setTimeout(() => void onChanged(), 4000);
         } catch (restartError) {
           onRestartNeeded();
-          showToast(`Telegram saved; gateway restart failed: ${restartError}`, "error");
+          showToast(tx("Telegram saved; gateway restart failed: {error}", { error: String(restartError) }), "error");
         }
       } else {
         onRestartNeeded();
         const detail = result.restart_error ? `: ${result.restart_error}` : "";
-        showToast(`Telegram saved; gateway restart failed${detail}`, "error");
+        showToast(tx("Telegram saved; gateway restart failed{detail}", { detail }), "error");
       }
       await onChanged();
     } catch (applyError) {
@@ -1262,11 +1262,10 @@ function TelegramOnboardingPanel({
     <div className="rounded-sm border border-border bg-background/35 p-4">
       <div className="grid gap-1">
         <span className="font-mondwest text-sm text-foreground">
-          Choose how to connect your Telegram bot
+          {tx("Choose how to connect your Telegram bot")}
         </span>
         <span className="text-xs text-muted-foreground">
-          Both options connect a bot you control and save its credentials only to
-          this Hermes installation.
+          {tx("Both options connect a bot you control and save its credentials only to this Hermes installation.")}
         </span>
       </div>
 
@@ -1274,13 +1273,12 @@ function TelegramOnboardingPanel({
         <div className="grid content-start gap-3 sm:pr-4">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-medium uppercase text-foreground">
-              Quick setup
+              {tx("Quick setup")}
             </span>
-            <Badge tone="success">recommended</Badge>
+            <Badge tone="success">{tx("recommended")}</Badge>
           </div>
           <p className="text-xs text-muted-foreground">
-            Scan a QR code and confirm in Telegram. Hermes creates the bot and
-            detects your Telegram user ID automatically.
+            {tx("Scan a QR code and confirm in Telegram. Hermes creates the bot and detects your Telegram user ID automatically.")}
           </p>
           <Button
             size="sm"
@@ -1289,17 +1287,16 @@ function TelegramOnboardingPanel({
             disabled={phase !== "idle"}
             prefix={phase === "starting" ? <Spinner /> : <QrCode className="h-4 w-4" />}
           >
-            {phase === "starting" ? "Starting…" : "Create with QR"}
+            {phase === "starting" ? tx("Starting…") : tx("Create with QR")}
           </Button>
         </div>
 
         <div className="grid content-start gap-3 border-t border-border pt-4 sm:border-t-0 sm:pl-4 sm:pt-0">
           <span className="text-xs font-medium uppercase text-foreground">
-            Use your own bot
+            {tx("Use your own bot")}
           </span>
           <p className="text-xs text-muted-foreground">
-            Create a bot with @BotFather, or connect one you already have, by
-            entering its token and choosing who can use it.
+            {tx("Create a bot with @BotFather, or connect one you already have, by entering its token and choosing who can use it.")}
           </p>
           <Button
             size="sm"
@@ -1309,22 +1306,21 @@ function TelegramOnboardingPanel({
             disabled={phase !== "idle"}
             prefix={<Bot className="h-4 w-4" />}
           >
-            Manual setup
+            {tx("Manual setup")}
           </Button>
         </div>
       </div>
 
       {platform.configured && (
         <div className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
-          Telegram credentials are already configured. A new QR setup or bot token
-          will replace the current bot when you save.
+          {tx("Telegram credentials are already configured. A new QR setup or bot token will replace the current bot when you save.")}
         </div>
       )}
 
       {phase !== "idle" && (
         <div className="mt-4 border-t border-border pt-4">
           <span className="text-xs text-muted-foreground">
-            Finish or cancel the current QR setup before switching methods.
+            {tx("Finish or cancel the current QR setup before switching methods.")}
           </span>
         </div>
       )}
@@ -1341,7 +1337,7 @@ function TelegramOnboardingPanel({
             {(phase === "ready" || phase === "applying") && (
               <div className="grid gap-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge tone="success">Ready</Badge>
+                  <Badge tone="success">{tx("Ready")}</Badge>
                   {botUsername && (
                     <span className="font-courier text-sm text-muted-foreground">
                       @{botUsername}
@@ -1352,10 +1348,10 @@ function TelegramOnboardingPanel({
                 <div className="grid gap-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
-                      Allowed users
+                      {tx("Allowed users")}
                     </span>
                     {detectedOwnerId && allowedIds.includes(detectedOwnerId) && (
-                      <Badge tone="success">owner detected</Badge>
+                      <Badge tone="success">{tx("owner detected")}</Badge>
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -1376,7 +1372,7 @@ function TelegramOnboardingPanel({
                     ))}
                     {allowedIds.length === 0 && (
                       <span className="text-sm text-muted-foreground">
-                        Add at least one Telegram user ID.
+                        {tx("Add at least one Telegram user ID.")}
                       </span>
                     )}
                   </div>
@@ -1386,11 +1382,11 @@ function TelegramOnboardingPanel({
                   <Input
                     value={newAllowedId}
                     onChange={(event) => setNewAllowedId(event.target.value)}
-                    placeholder="Telegram user ID"
+                    placeholder={tx("Telegram user ID")}
                     className="font-courier"
                   />
                   <Button size="sm" outlined onClick={addAllowedId} prefix={<Check />}>
-                    Add
+                    {tx("Add")}
                   </Button>
                 </div>
 
@@ -1402,10 +1398,10 @@ function TelegramOnboardingPanel({
                     disabled={phase === "applying"}
                     prefix={phase === "applying" ? <Spinner /> : <Save className="h-4 w-4" />}
                   >
-                    {phase === "applying" ? "Saving…" : "Save and restart"}
+                    {phase === "applying" ? tx("Saving…") : tx("Save and restart")}
                   </Button>
                   <Button size="sm" ghost onClick={() => void cancel()}>
-                    Cancel
+                    {tx("Cancel")}
                   </Button>
                 </div>
               </div>
@@ -1415,14 +1411,14 @@ function TelegramOnboardingPanel({
           <div className="flex flex-col items-center justify-center gap-3">
             <img
               src={qrDataUrl}
-              alt="Telegram setup QR code"
+              alt={tx("Telegram setup QR code")}
               className="h-56 w-56 bg-white p-2"
             />
             <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
               <Badge tone={expiresIn === "expired" ? "destructive" : "outline"}>
                 {expiresIn}
               </Badge>
-              {phase === "waiting" && <Badge tone="warning">waiting</Badge>}
+              {phase === "waiting" && <Badge tone="warning">{tx("waiting")}</Badge>}
             </div>
             <div className="flex flex-wrap justify-center gap-2">
               <a
@@ -1432,10 +1428,10 @@ function TelegramOnboardingPanel({
                 className="inline-flex h-8 items-center gap-1 border border-border px-3 text-xs uppercase text-foreground hover:border-foreground/40"
               >
                 <ExternalLink className="h-4 w-4" />
-                Open Telegram
+                {tx("Open Telegram")}
               </a>
               <Button size="sm" ghost onClick={() => void cancel()}>
-                Cancel
+                {tx("Cancel")}
               </Button>
             </div>
           </div>

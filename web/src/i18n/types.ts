@@ -89,17 +89,27 @@ export interface Translations {
     };
     nav: {
       analytics: string;
+      channels?: string;
       chat: string;
       config: string;
       cron: string;
       documentation: string;
+      files?: string;
       keys: string;
       logs: string;
+      mcp?: string;
       models: string;
+      pairing?: string;
       profiles: string;
       plugins: string;
       sessions: string;
       skills: string;
+      system?: string;
+      webhooks?: string;
+    };
+    pluginLabels?: {
+      achievements?: string;
+      kanban?: string;
     };
     modelToolsSheetSubtitle: string;
     modelToolsSheetTitle: string;
@@ -123,6 +133,7 @@ export interface Translations {
     diskCriticalBanner?: string;
     diskElevatedBanner?: string;
     dismiss?: string;
+    loadingChat?: string;
   };
 
   // ── Status page ──
@@ -161,6 +172,7 @@ export interface Translations {
     updateHermesConfirmMessage?: string;
     updateHermesConfirmNow?: string;
     updateHermesConfirmTitle?: string;
+    updateHermesConfirmMessageWithCommits?: string;
     updatingHermes: string;
     waitingForOutput: string;
   };
@@ -251,7 +263,29 @@ export interface Translations {
     toolCalls: string;
     noModelsData: string;
     startSession: string;
+    picker?: {
+      current: string;
+      unknown: string;
+      filter: string;
+      savesToConfig: string;
+      persistGlobal: string;
+      refresh: string;
+      switch: string;
+      switchAnyway: string;
+      expensiveWarning: string;
+      loading: string;
+      noMatches: string;
+      noProviders: string;
+      pickProvider: string;
+      noModelsMatch: string;
+      noModelsForProvider: string;
+      currentLabel: string;
+      modelCount: string;
+    };
+    ui?: Record<string, string>;
   };
+  mcpUi?: Record<string, string>;
+  profileBuilderUi?: Record<string, string>;
 
   // ── Logs page ──
   logs: {
@@ -458,6 +492,20 @@ export interface Translations {
     profileSelector?: string;
     currentProfile?: string;
     managingProfile?: string;
+    editor?: {
+      editTitle: string;
+      newTitle: string;
+      editDescription: string;
+      newDescription: string;
+      name: string;
+      nameRequired: string;
+      categoryOptional: string;
+      contentRequired: string;
+      loading: string;
+      save: string;
+      saving: string;
+      create: string;
+    };
   };
 
   // ── Config page ──
@@ -578,6 +626,44 @@ export interface Translations {
     switchTo: string;
   };
 
+  chat?: {
+    sessionTokenUnavailable: string;
+    imageUploadFailed: string;
+    imageUploadedDisconnected: string;
+    authFailed: string;
+    authFailedRefresh: string;
+    requestOriginMismatch: string;
+    websocketUnavailable: string;
+    localhostOnly: string;
+    reconnecting: string;
+    disconnected: string;
+    reconnect: string;
+    sessionEnded: string;
+    newSession: string;
+    copyLastResponse: string;
+    responseCopied: string;
+    copyRawMarkdownTitle: string;
+    showSidePanel: string;
+    showSidePanelAria: string;
+    collapseSidePanel: string;
+    panel: string;
+    reasoningApplied: string;
+    modelApplied: string;
+    reconnectEventsFeed: string;
+    modelSwitchTitle: string;
+    modelSwitchDescription: string;
+    reload: string;
+  };
+
+  // ── Dashboard authentication widget ──
+  authWidget?: {
+    statusUnavailable: string;
+    loggedInAs: string;
+    logout: string;
+    via: string;
+    basicProvider?: string;
+  };
+
   // ── Theme switcher ──
   theme: {
     title: string;
@@ -593,6 +679,18 @@ export interface Translations {
 
   // ── Achievements plugin (plugins/hermes-achievements) ──
   achievements: {
+    items?: Record<string, { name: string; description: string }>;
+    categories?: Record<string, string>;
+    tiers?: Record<string, string>;
+    secret?: { description: string };
+    criteria?: {
+      metrics: Record<string, string>;
+      prefix?: string;
+      tiered?: string;
+      multiple?: string;
+      behavior?: string;
+      secret?: string;
+    };
     hero: {
       kicker: string;
       title: string;
@@ -685,6 +783,10 @@ export interface Translations {
       hint: string;
       clipboard_unsupported: string;
       tweet_text: string;
+      tier_badge?: string;
+      tier_part?: string;
+      image_unlocked?: string;
+      image_tier_badge?: string;
     };
   };
 

@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "project": "<repository-or-project-id>",
+  "feature_id": "<stable-feature-id>",
+  "spec_ref": "SPEC.md",
+  "design_ref": "DESIGN.md",
+  "base_sha": "<commit-sha>",
+  "status": "ready",
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "<one outcome, verb + object>",
+      "problem": "<why this task exists>",
+      "requirements": ["REQ-1"],
+      "solution": "<bounded technical approach approved by DESIGN.md>",
+      "acceptance_criteria": [
+        {
+          "id": "AC-T001-1",
+          "given": "<precondition>",
+          "when": "<action/input>",
+          "then": "<observable result>",
+          "evidence": "<test or other verification>"
+        }
+      ],
+      "test_plan": [
+        {
+          "name": "<scenario/check>",
+          "type": "unit|integration|e2e|manual|static",
+          "scope": "<module/component>",
+          "reason": "<why this check gives useful evidence>"
+        }
+      ],
+      "dependencies": [],
+      "priority": "P1",
+      "priority_reason": "<impact, urgency, or unlocks other work>",
+      "size": "S|M|L|XL",
+      "owned_paths": ["<repo-relative/path>"],
+      "assignee_role": "backend|frontend|mobile|go",
+      "definition_of_ready": [
+        "Dependencies complete",
+        "Required contracts and interfaces are available",
+        "Owned paths do not overlap active tasks"
+      ],
+      "definition_of_done": [
+        "Acceptance criteria have implementation evidence",
+        "Required checks have recorded outcomes",
+        "Implementation report references the tested head SHA"
+      ]
+    }
+  ],
+  "requirement_coverage": [
+    {"requirement_id": "AC-1", "task_ids": ["T-001"], "verification": "<test/check>"}
+  ],
+  "dependency_graph": {
+    "acyclic": true,
+    "critical_path_task_ids": ["T-001"],
+    "parallel_groups": []
+  },
+  "open_questions": [],
+  "risks": []
+}

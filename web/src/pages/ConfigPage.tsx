@@ -49,6 +49,7 @@ import { ConfirmDialog } from "@nous-research/ui/ui/components/confirm-dialog";
 import { Input } from "@nous-research/ui/ui/components/input";
 import { Badge } from "@nous-research/ui/ui/components/badge";
 import { useI18n } from "@/i18n";
+import { fieldCountText, fieldsResetText, generalPageText } from "@/i18n/general-pages";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
 
@@ -122,7 +123,7 @@ export default function ConfigPage() {
   const [confirmReset, setConfirmReset] = useState(false);
   const { toast, showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { setEnd } = usePageHeader();
 
   useLayoutEffect(() => {
@@ -158,7 +159,8 @@ export default function ConfigPage() {
   function prettyCategoryName(cat: string): string {
     const key = cat as keyof typeof t.config.categories;
     if (t.config.categories[key]) return t.config.categories[key];
-    return cat.charAt(0).toUpperCase() + cat.slice(1);
+    const label = cat.replace(/_/g, " ");
+    return generalPageText(locale, label.charAt(0).toUpperCase() + label.slice(1));
   }
 
   useEffect(() => {
@@ -412,7 +414,7 @@ export default function ConfigPage() {
           {showSection && (
             <div className="flex items-center gap-2 pt-4 pb-2 first:pt-0">
               <span className="font-mondwest text-display text-xs font-semibold tracking-wider text-muted-foreground">
-                {section.replace(/_/g, " ")}
+                {generalPageText(locale, section.replace(/_/g, " "))}
               </span>
               <div className="flex-1 border-t border-border" />
             </div>
@@ -498,7 +500,7 @@ export default function ConfigPage() {
             onClick={() => setYamlMode(!yamlMode)}
             prefix={yamlMode ? <FormInput /> : <Code />}
           >
-            {yamlMode ? t.common.form : "YAML"}
+            {yamlMode ? t.common.form : generalPageText(locale, "YAML")}
           </Button>
 
           {yamlMode ? (
@@ -610,11 +612,7 @@ export default function ConfigPage() {
                       {t.config.searchResults}
                     </CardTitle>
                     <Badge tone="secondary" className="text-xs">
-                      {searchMatchedFields.length}{" "}
-                      {t.config.fields.replace(
-                        "{s}",
-                        searchMatchedFields.length !== 1 ? "s" : "",
-                      )}
+                      {fieldCountText(locale, searchMatchedFields.length)}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -641,11 +639,7 @@ export default function ConfigPage() {
                       {prettyCategoryName(activeCategory)}
                     </CardTitle>
                     <Badge tone="secondary" className="text-xs">
-                      {activeFields.length}{" "}
-                      {t.config.fields.replace(
-                        "{s}",
-                        activeFields.length !== 1 ? "s" : "",
-                      )}
+                      {fieldCountText(locale, activeFields.length)}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -668,9 +662,10 @@ export default function ConfigPage() {
             ? t.config.searchResults
             : prettyCategoryName(activeCategory),
         )}
-        description={`This will reset ${
-          (isSearching ? searchMatchedFields : activeFields).length
-        } field(s) to their default values.`}
+        description={fieldsResetText(
+          locale,
+          (isSearching ? searchMatchedFields : activeFields).length,
+        )}
         destructive
         confirmLabel={t.config.resetDefaults}
       />

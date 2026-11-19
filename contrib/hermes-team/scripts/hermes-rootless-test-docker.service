@@ -1,0 +1,21 @@
+[Unit]
+Description=Isolated rootless Docker daemon for Hermes backend tests
+
+[Service]
+Type=simple
+ExecStartPre=/home/alex/.local/share/hermes-test-runtime/tools/hermes-rootless-test-docker.sh prepare
+ExecStart=/home/alex/.local/share/hermes-test-runtime/tools/hermes-rootless-test-docker.sh run
+ExecStartPost=/home/alex/.local/share/hermes-test-runtime/tools/hermes-rootless-test-docker.sh wait-ready
+Environment=HOME=/home/alex
+Environment=USER=alex
+Environment=LOGNAME=alex
+Environment=PATH=/usr/bin:/bin
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+UMask=0077
+Restart=on-failure
+RestartSec=5
+KillMode=control-group
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

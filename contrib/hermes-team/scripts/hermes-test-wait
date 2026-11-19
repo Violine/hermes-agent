@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+export PYTHONPATH=/home/alex/.hermes/team/runtime
+exec /home/alex/.hermes/hermes-agent/venv/bin/python -m team_engine.test_waits "$@"

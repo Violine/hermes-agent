@@ -1,0 +1,14 @@
+[Unit]
+Description=Hermes engineering team controller (inside VPN container)
+After=default.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/docker exec hermes-vpn-hermes /home/alex/.hermes/team/runtime/scripts/teamctl daemon
+ExecStop=/usr/bin/docker exec hermes-vpn-hermes /home/alex/.hermes/team/runtime/scripts/teamctl stop
+Restart=always
+RestartSec=10
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

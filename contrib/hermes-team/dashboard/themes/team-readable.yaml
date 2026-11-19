@@ -1,0 +1,103 @@
+name: team-readable
+label: Hermes · единый стиль
+description: Единая типографика, удобные формы и читаемая канбан-доска. Шрифты работают без внешних загрузок.
+palette:
+  background: {hex: '#041c1c', alpha: 1}
+  midground: {hex: '#ffe6cb', alpha: 1}
+  foreground: {hex: '#ffffff', alpha: 0}
+typography:
+  fontSans: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+  fontMono: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace'
+  fontDisplay: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+  baseSize: 16px
+  lineHeight: '1.5'
+  letterSpacing: '0'
+layout:
+  radius: 0.625rem
+  density: comfortable
+customCSS: |
+  /* One type system for the shell, native pages, plugins and portalled
+     dialogs. Preserve code/terminal typography and the user's font choice. */
+  :root {
+    --font-sans: var(--theme-font-sans);
+    --font-mono: var(--theme-font-mono);
+    --font-rules-compressed: var(--theme-font-sans);
+    --font-rules-expanded: var(--theme-font-sans);
+    --font-mondwest: var(--theme-font-sans);
+    --font-collapse: var(--theme-font-sans);
+  }
+  body :is(h1, h2, h3, h4, label, button, input, select, textarea, [role="combobox"], [role="menuitem"], [role="option"]) {
+    font-family: var(--theme-font-sans);
+    letter-spacing: normal;
+  }
+  body :is(.font-compressed, .font-expanded, .font-mondwest, .font-collapse) {
+    text-transform: none;
+    letter-spacing: normal;
+    line-height: 1.5;
+  }
+  body :is(h1, h2, h3, h4, button, label, [role="combobox"]) {
+    text-transform: none;
+  }
+  #app-sidebar nav a {
+    font-family: var(--theme-font-sans);
+    font-size: .875rem;
+    font-weight: 500;
+    letter-spacing: normal;
+    text-transform: none;
+    line-height: 1.4;
+  }
+  #root h1:not(.hermes-kanban-md *) {
+    font-size: clamp(1.375rem, 2.4vw, 1.75rem);
+    line-height: 1.25;
+    font-weight: 650;
+    letter-spacing: -.02em;
+  }
+  body :is(button:not([role="checkbox"]):not([role="switch"]), [role="combobox"], input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    border-radius: var(--theme-radius);
+  }
+  body button { font-size: .875rem; }
+  body :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea, [role="combobox"]) {
+    font-size: .875rem;
+    line-height: 1.5;
+  }
+  body :is(code, pre, kbd, samp, .font-mono-ui:not(button):not([role="combobox"]):not(label), .font-mono:not(button):not([role="combobox"]):not(label), .et-textarea) {
+    font-family: var(--theme-font-mono);
+    letter-spacing: normal;
+  }
+  /* Kanban: compact, but readable; only raw data uses monospace. */
+  .hermes-kanban :is(label, button:not(.hermes-kanban-column-add)) {
+    font-size: .8125rem;
+    line-height: 1.4;
+  }
+  .hermes-kanban-column-header { font-size: .875rem; }
+  .hermes-kanban-column-sub { font-size: .75rem; line-height: 1.5; }
+  .hermes-kanban-card-title { font-size: .875rem; line-height: 1.45; }
+  .hermes-kanban-columns {
+    padding-bottom: 14px;
+    scrollbar-gutter: stable;
+    scrollbar-color: auto;
+    scrollbar-width: auto;
+  }
+  .hermes-kanban-column { max-height: clamp(240px, 55dvh, 800px); }
+  .hermes-kanban-columns::-webkit-scrollbar { height: 12px; }
+  .hermes-kanban-columns::-webkit-scrollbar-track {
+    background: var(--color-card);
+    border-radius: 8px;
+  }
+  .hermes-kanban-columns::-webkit-scrollbar-thumb {
+    background: var(--color-muted-foreground);
+    border: 3px solid var(--color-card);
+    border-radius: 8px;
+  }
+  /* The achievements plugin uses a separate retro style by default. */
+  :is(.ha-kicker, .ha-stat-label, .ha-tier-badge, .ha-state-badge,
+      .ha-criteria summary, .ha-evidence-label, .ha-guide strong,
+      .ha-tier-step, .ha-scan-status strong, .ha-scan-banner-text strong,
+      .ha-share-trigger, .ha-share-head strong, .ha-share-btn,
+      .ha-share-placeholder, .ha-loading) {
+    font-family: var(--theme-font-sans);
+    text-transform: none;
+    letter-spacing: normal;
+    line-height: 1.5;
+  }
+  .ha-hero h1 { line-height: 1.25; }

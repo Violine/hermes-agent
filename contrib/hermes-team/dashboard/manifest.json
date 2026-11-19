@@ -1,0 +1,14 @@
+{
+  "name": "engineering-team",
+  "label": "Команда",
+  "description": "Обзор команды агентов, настройка ролей, моделей, квот и проектов",
+  "icon": "Users",
+  "version": "1.0.0",
+  "tab": {
+    "path": "/engineering-team",
+    "position": "before:kanban"
+  },
+  "entry": "index.js",
+  "css": "style.css",
+  "api": "plugin_api.py"
+}

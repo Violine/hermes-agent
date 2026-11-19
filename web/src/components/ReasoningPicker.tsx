@@ -1,3 +1,4 @@
+import { useComponentCopy } from "@/i18n/component-copy";
 /**
  * ReasoningPicker — sets the main model's reasoning effort from the dashboard
  * Chat sidebar, mirroring the desktop app's composer effort radio.
@@ -49,6 +50,7 @@ export function ReasoningPicker({
   refreshKey = 0,
   onChanged,
 }: ReasoningPickerProps) {
+  const copy = useComponentCopy();
   const [effort, setEffort] = useState("medium");
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -106,7 +108,7 @@ export function ReasoningPicker({
     <div className="flex items-center gap-2 px-3 py-2 text-xs">
       <div className="flex items-center gap-1.5 text-text-tertiary">
         <Brain className="h-3.5 w-3.5" />
-        <span className="text-display tracking-wider">reasoning</span>
+        <span className="text-display tracking-wider">{copy("reasoning")}</span>
       </div>
       <Select
         className="ml-auto min-w-0"
@@ -116,7 +118,7 @@ export function ReasoningPicker({
       >
         {EFFORT_OPTIONS.map((opt) => (
           <SelectOption key={opt.value} value={opt.value}>
-            {opt.label}
+            {copy(opt.label)}
           </SelectOption>
         ))}
       </Select>

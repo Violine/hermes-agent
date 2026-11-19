@@ -16,20 +16,24 @@ import type {
   AnalyticsModelEntry,
   AnalyticsSkillEntry,
 } from "@/lib/api";
-import { timeAgo } from "@/lib/utils";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { Stats } from "@nous-research/ui/ui/components/stats";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { useI18n } from "@/i18n";
+import { operationsText } from "@/i18n/operations-pages";
 import { PluginSlot } from "@/plugins";
 
 const PERIODS = [
-  { label: "7d", days: 7 },
-  { label: "30d", days: 30 },
-  { label: "90d", days: 90 },
+  { days: 7 },
+  { days: 30 },
+  { days: 90 },
 ] as const;
+
+function periodLabel(days: number, locale: string): string {
+  return locale === "ru" ? `${days} дн.` : `${days}d`;
+}
 
 const CHART_HEIGHT_PX = 160;
 
@@ -39,13 +43,37 @@ function formatTokens(n: number): string {
   return String(n);
 }
 
-function formatDate(day: string): string {
+function formatDate(day: string, locale: string): string {
   try {
     const d = new Date(day + "T00:00:00");
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return d.toLocaleDateString(locale, { month: "short", day: "numeric" });
   } catch {
     return day;
   }
+}
+
+function formatRelativeTime(value: number, locale: string): string {
+  const seconds = (value * 1000 - Date.now()) / 1000;
+  if (!Number.isFinite(seconds)) return String(value);
+  const units: [number, Intl.RelativeTimeFormatUnit][] = [
+    [60, "second"],
+    [60, "minute"],
+    [24, "hour"],
+    [30, "day"],
+    [12, "month"],
+    [Number.POSITIVE_INFINITY, "year"],
+  ];
+  let amount = seconds;
+  let unit: Intl.RelativeTimeFormatUnit = "second";
+  for (const [limit, candidate] of units) {
+    unit = candidate;
+    if (Math.abs(amount) < limit) break;
+    amount /= limit;
+  }
+  return new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(
+    Math.round(amount),
+    unit,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -128,7 +156,7 @@ function SortHeader({
 
 
 function TokenBarChart({ daily }: { daily: AnalyticsDailyEntry[] }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   if (daily.length === 0) return null;
 
   const maxTokens = Math.max(
@@ -183,7 +211,7 @@ function TokenBarChart({ daily }: { daily: AnalyticsDailyEntry[] }) {
               >
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10 pointer-events-none">
                   <div className="font-mondwest normal-case bg-card border border-border px-2.5 py-1.5 text-xs text-foreground shadow-lg whitespace-nowrap">
-                    <div className="font-medium">{formatDate(d.day)}</div>
+                    <div className="font-medium">{formatDate(d.day, locale)}</div>
                     <div>
                       {t.analytics.input}: {formatTokens(d.input_tokens)}
                     </div>
@@ -219,12 +247,12 @@ function TokenBarChart({ daily }: { daily: AnalyticsDailyEntry[] }) {
         </div>
 
         <div className="flex justify-between mt-2 font-mondwest normal-case text-xs text-text-tertiary">
-          <span>{daily.length > 0 ? formatDate(daily[0].day) : ""}</span>
+          <span>{daily.length > 0 ? formatDate(daily[0].day, locale) : ""}</span>
           {daily.length > 2 && (
-            <span>{formatDate(daily[Math.floor(daily.length / 2)].day)}</span>
+            <span>{formatDate(daily[Math.floor(daily.length / 2)].day, locale)}</span>
           )}
           <span>
-            {daily.length > 1 ? formatDate(daily[daily.length - 1].day) : ""}
+            {daily.length > 1 ? formatDate(daily[daily.length - 1].day, locale) : ""}
           </span>
         </div>
       </CardContent>
@@ -233,7 +261,7 @@ function TokenBarChart({ daily }: { daily: AnalyticsDailyEntry[] }) {
 }
 
 function DailyTable({ daily }: { daily: AnalyticsDailyEntry[] }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { sorted, sortKey, sortDir, toggle } = useTableSort(daily, "day", "desc");
 
   if (daily.length === 0) return null;
@@ -266,7 +294,7 @@ function DailyTable({ daily }: { daily: AnalyticsDailyEntry[] }) {
                     className="border-b border-border/50 hover:bg-secondary/20 transition-colors"
                   >
                   <td className="py-2 pr-4 font-medium">
-                      {formatDate(d.day)}
+                      {formatDate(d.day, locale)}
                     </td>
                   <td className="text-right py-2 px-4 text-muted-foreground">
                       {d.sessions}
@@ -349,7 +377,7 @@ function ModelTable({ models }: { models: AnalyticsModelEntry[] }) {
 }
 
 function SkillTable({ skills }: { skills: AnalyticsSkillEntry[] }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { sorted, sortKey, sortDir, toggle } = useTableSort(skills, "total_count", "desc");
 
   if (skills.length === 0) return null;
@@ -391,7 +419,7 @@ function SkillTable({ skills }: { skills: AnalyticsSkillEntry[] }) {
                   </td>
                   <td className="text-right py-2 px-4">{skill.total_count}</td>
                   <td className="text-right py-2 pl-4 text-muted-foreground">
-                    {skill.last_used_at ? timeAgo(skill.last_used_at) : "—"}
+                    {skill.last_used_at ? formatRelativeTime(skill.last_used_at, locale) : "—"}
                   </td>
                 </tr>
               ))}
@@ -413,7 +441,7 @@ export default function AnalyticsPage() {
   // local token counts exclude auxiliary calls and provider retries, so
   // they diverge from provider billing in ways that mislead users.
   const [showTokens, setShowTokens] = useState<boolean | null>(null);
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { setAfterTitle, setEnd } = usePageHeader();
 
   useEffect(() => {
@@ -447,13 +475,13 @@ export default function AnalyticsPage() {
         <div className="flex flex-wrap items-center gap-1.5">
           {PERIODS.map((p) => (
             <Button
-              key={p.label}
+              key={p.days}
               type="button"
               size="sm"
               outlined={days !== p.days}
               onClick={() => setDays(p.days)}
             >
-              {p.label}
+              {periodLabel(p.days, locale)}
             </Button>
           ))}
           <Button
@@ -475,7 +503,7 @@ export default function AnalyticsPage() {
       setAfterTitle(null);
       setEnd(null);
     };
-  }, [days, loading, load, setAfterTitle, setEnd, t.common.refresh, showTokens]);
+  }, [days, loading, load, setAfterTitle, setEnd, t.common.refresh, showTokens, locale]);
 
   useEffect(() => {
     load();
@@ -490,32 +518,20 @@ export default function AnalyticsPage() {
           <CardContent className="py-12">
             <div className="mx-auto flex max-w-2xl flex-col gap-3 text-sm text-muted-foreground">
               <h2 className="font-mondwest text-display text-base tracking-wider text-foreground">
-                Token analytics hidden
+                {operationsText(locale, "Token analytics hidden")}
               </h2>
               <p>
-                The token, cost, and per-day analytics on this page are a
-                local debug estimate. They only count successful main-agent
-                responses with a usable <span className="font-mono">usage</span>{" "}
-                block, and silently exclude auxiliary calls (context
-                compression, title generation, vision, session search, web
-                extract, smart approvals, MCP routing, plugin LLM access)
-                plus provider-side retries and fallback attempts. Cache
-                writes are missing entirely.
+                {operationsText(locale, "The token, cost, and per-day analytics on this page are a local debug estimate. They only count successful main-agent responses with a usable usage block, and silently exclude auxiliary calls (context compression, title generation, vision, session search, web extract, smart approvals, MCP routing, plugin LLM access) plus provider-side retries and fallback attempts. Cache writes are missing entirely.")}
               </p>
               <p>
-                On models with heavy auxiliary traffic (Kimi K2.6, MiniMax
-                M2.7) the local total can be 10x–100x lower than what your
-                provider bills. Hiding these numbers is safer than letting
-                them look authoritative.
+                {operationsText(locale, "On models with heavy auxiliary traffic (Kimi K2.6, MiniMax M2.7) the local total can be 10x–100x lower than what your provider bills. Hiding these numbers is safer than letting them look authoritative.")}
               </p>
               <p>
-                Check your provider dashboard (OpenRouter, Anthropic, etc.)
-                for actual usage and billing. To re-enable the local debug
-                estimate anyway, set{" "}
+                {operationsText(locale, "Check your provider dashboard (OpenRouter, Anthropic, etc.) for actual usage and billing. To re-enable the local debug estimate anyway, set")}{" "}
                 <span className="font-mono">
                   dashboard.show_token_analytics: true
                 </span>{" "}
-                in <a href="/config" className="underline">Config</a>.
+                {operationsText(locale, "in")} <a href="/config" className="underline">{operationsText(locale, "Config")}</a>.
               </p>
             </div>
           </CardContent>

@@ -36,6 +36,7 @@ import { Badge } from "@nous-research/ui/ui/components/badge";
 import { Input } from "@nous-research/ui/ui/components/input";
 import { Label } from "@nous-research/ui/ui/components/label";
 import { useI18n } from "@/i18n";
+import { generalPageText, keyCountText } from "@/i18n/general-pages";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
 
@@ -125,7 +126,7 @@ function EnvVarRow({
   clearDialogOpen?: boolean;
   compact?: boolean;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const isEditing = edits[varKey] !== undefined;
   const isRevealed = !!revealed[varKey];
   const displayValue = isRevealed
@@ -260,7 +261,7 @@ function EnvVarRow({
               size="icon"
               onClick={() => onReveal(varKey)}
               title={isRevealed ? t.env.hideValue : t.env.showValue}
-              aria-label={isRevealed ? `Hide ${varKey}` : `Reveal ${varKey}`}
+              aria-label={generalPageText(locale, isRevealed ? "Hide {key}" : "Reveal {key}", { key: varKey })}
             >
               {isRevealed ? <EyeOff /> : <Eye />}
             </Button>
@@ -359,7 +360,7 @@ function ProviderGroupCard({
   clearDialogOpen?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   // Separate API keys from base URLs and other settings
   const apiKeys = group.entries.filter(
@@ -416,9 +417,7 @@ function ProviderGroupCard({
             </a>
           )}
           <span className="text-xs text-text-tertiary">
-            {t.env.keysCount
-              .replace("{count}", String(group.entries.length))
-              .replace("{s}", group.entries.length !== 1 ? "s" : "")}
+            {keyCountText(locale, group.entries.length)}
           </span>
         </div>
       </ListItem>
@@ -613,7 +612,7 @@ export default function EnvPage() {
   const [saving, setSaving] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(true); // Show all providers by default
   const { toast, showToast } = useToast();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { setAfterTitle } = usePageHeader();
 
   useEffect(() => {
@@ -627,14 +626,14 @@ export default function EnvPage() {
   const sections = useMemo(() => {
     const items: { id: string; label: string }[] = [
       { id: "section-oauth", label: "OAuth" },
-      { id: "section-providers", label: "Providers" },
+      { id: "section-providers", label: generalPageText(locale, "Providers") },
     ];
     if (vars) {
       const categories = ["tool", "messaging", "setting"];
       const CATEGORY_LABELS: Record<string, string> = {
-        tool: "Tools",
+        tool: generalPageText(locale, "Tools"),
         messaging: t.common.gateway ?? "Gateway",
-        setting: "Settings",
+        setting: generalPageText(locale, "Settings"),
       };
       for (const cat of categories) {
         const hasEntries = Object.values(vars).some(
@@ -648,7 +647,7 @@ export default function EnvPage() {
       items.push({ id: "section-custom", label: t.env.customTitle });
     }
     return items;
-  }, [vars, t]);
+  }, [vars, t, locale]);
 
   useLayoutEffect(() => {
     if (!vars) {
@@ -661,7 +660,7 @@ export default function EnvPage() {
     setAfterTitle(
       <nav
         className="flex shrink-0 flex-nowrap items-center gap-1"
-        aria-label="Jump to section"
+        aria-label={generalPageText(locale, "Jump to section")}
       >
         {sections.map((s) => (
           <button
@@ -678,7 +677,7 @@ export default function EnvPage() {
     return () => {
       setAfterTitle(null);
     };
-  }, [vars, sections, setAfterTitle]);
+  }, [vars, sections, setAfterTitle, locale]);
 
   const handleSave = async (key: string) => {
     const value = edits[key];
@@ -708,7 +707,7 @@ export default function EnvPage() {
         delete n[key];
         return n;
       });
-      showToast(`${key} ${t.common.save.toLowerCase()}d`, "success");
+      showToast(generalPageText(locale, "Saved key: {key}", { key }), "success");
     } catch (e) {
       showToast(`${t.config.failedToSave} ${key}: ${e}`, "error");
     } finally {
@@ -740,7 +739,7 @@ export default function EnvPage() {
             delete n[key];
             return n;
           });
-          showToast(`${key} ${t.common.removed}`, "success");
+          showToast(generalPageText(locale, "Removed key: {key}", { key }), "success");
         } catch (e) {
           showToast(`${t.common.failedToRemove} ${key}: ${e}`, "error");
           throw e;
@@ -748,7 +747,7 @@ export default function EnvPage() {
           setSaving(null);
         }
       },
-      [showToast, t.common.removed, t.common.failedToRemove],
+      [showToast, t.common.failedToRemove, locale],
     ),
   });
 
